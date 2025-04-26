@@ -1,0 +1,68 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User{
+  id       Int  @id @default(autoincrement()) 
+  email String 
+  nama String
+  // relation
+  jadwal JadwalMakan[]
+}
+
+model Sapi{
+  id       Int  @id @default(autoincrement())
+  jenis String
+  bobot Float
+  image String
+  tanggalLahir DateTime
+  tanggalKematian DateTime? 
+  // relation
+  jadwal JadwalMakan[]
+}
+
+model Pakan{
+  id       Int  @id @default(autoincrement())
+  jenis String
+  banyakStok Float
+  harga Float? 
+  image String
+  // relation
+  jadwal JadwalMakan[]
+}
+
+model JadwalMakan{
+    id Int @id @default(autoincrement())
+    tanggal DateTime
+    sapi Sapi @relation(fields: [sapiId], references: [id])
+    sapiId Int
+    pakan Pakan @relation(fields: [pakanId], references: [id])
+    pakanId Int
+    user User @relation(fields: [userId], references: [id])
+    userId Int 
+}
+
+// PETERNAK / USER
+// id, email, nama
+
+// SAPI
+// id, jenis, bobot, image, jenisKelamin, tanggalLahir
+
+// PAKAN
+// id, jenis, stok, harga(perkilo), komposisi
+
+// jadwalMakan
+// id, sapiId, pakanId, peternakId, datetime
