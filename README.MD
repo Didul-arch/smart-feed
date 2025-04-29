@@ -2,7 +2,7 @@
 
 - Node.js (v18+)
 - pnpm
-- PostgreSQL
+- PostgreSQL (SupaBase)
 
 ### Backend Setup
 
@@ -11,7 +11,7 @@
 cd backend
 
 # 2. Install dependencies
-npm install
+pnpm install
 
 # 3. Set up environment variables
 cp .env.example .env
@@ -19,13 +19,13 @@ cp .env.example .env
 # DATABASE_URL="postgres://username:password@localhost/smartfeed"
 
 # 4. Generate Prisma client
-npx prisma generate
+pnpx prisma generate
 
 # 5. Run database migrations
-npx prisma migrate dev
+pnpx prisma migrate dev
 
 # 6. Start backend server
-npm run dev
+pnpm run dev
 ```
 
 ### Frontend Setup
@@ -38,14 +38,7 @@ cd frontend
 pnpm install
 
 # 3. Start development server
-pnpm dev
-```
-
-## Accessing the Application
-
-- Frontend: http://localhost:5173
-- Backend API: http://localhost:3000
-- Database UI: http://localhost:3000/prisma-studio (after running `npx prisma studio`)
+pnpm run dev
 
 ## Common Issues
 
@@ -57,6 +50,6 @@ pnpm dev
 
 ```
 smartfeed/
-├── frontend/    # React app
+├── frontend/    # React + Vite
 └── backend/     # Express API + Prisma
 ```
