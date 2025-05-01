@@ -1,17 +1,21 @@
-import { Outlet } from 'react-router-dom'
-import Navbar from './Navbar'
-import Sidebar from './Sidebar'
+import { Outlet } from 'react-router-dom';
+import MobileNavbar from '../ui/navbar';
 
-export default function Layout() {
+const Layout = () => {
+
+
   return (
-    <div className="flex h-screen bg-gray-100">
-      <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Navbar />
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-6">
-          <Outlet />
-        </main>
-      </div>
+    <div className="flex flex-col min-h-screen bg-gray-50">
+      {/* Main content area with padding for navbar at bottom */}
+      <main className="flex-grow pt-20">
+        {/* Router outlet - ini yang akan render component dari routes */}
+        <Outlet />
+      </main>
+
+      {/* Navbar di bagian bawah */}
+      <MobileNavbar />
     </div>
-  )
-}
+  );
+};
+
+export default Layout;

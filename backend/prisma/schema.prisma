@@ -23,15 +23,26 @@ model User{
   jadwal JadwalMakan[]
 }
 
-model Sapi{
-  id       Int  @id @default(autoincrement())
-  jenis String
-  bobot Float
-  image String
-  tanggalLahir DateTime
-  tanggalKematian DateTime? 
+model Kandang {
+  id          Int     @id @default(autoincrement())
+  nama        String
+  lokasi      String?
+  kapasitas   Int
   // relation
-  jadwal JadwalMakan[]
+  sapi        Sapi[]
+}
+
+model Sapi {
+  id             Int       @id @default(autoincrement())
+  jenis          String
+  bobot          Float
+  image          String
+  kandang        Kandang   @relation(fields: [kandangId], references: [id])
+  kandangId      Int
+  tanggalLahir   DateTime
+  tanggalKematian DateTime?
+  // relation
+  jadwal         JadwalMakan[]
 }
 
 model Pakan{
