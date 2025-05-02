@@ -21,8 +21,8 @@ class JadwalRepository {
 
   async delete(id){
     return prisma.jadwalMakan.delete({
-      where:{
-        id: { id: Number(id) }
+      where: {
+        id: Number(id)
       }
     });
   }
