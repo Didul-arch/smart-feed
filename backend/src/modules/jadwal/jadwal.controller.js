@@ -10,7 +10,7 @@ class jadwalController {
   
   getById = catchAsync(async(req, res) => {
     const { id } = req.params;
-    const data = await jadwalService.getById();
+    const data = await jadwalService.getById(id);
     if (!data) return res.status(404).json({ message:"Jadwal not found" });
     res.json(data);
   });
