@@ -1,4 +1,4 @@
-const jadwalRepository = require('./pakan.repository');
+const jadwalRepository = require('./jadwal.repository');
 
 class jadwalService {
   async getAll() {
