@@ -30,5 +30,10 @@ class jadwalController {
     if (!data) return res.status(404).json({ message: "Jadwal not found" });
     res.json(data);
   })
-  delete
+  delete = catchAsync(async (req, res) => {
+    const { id } = req.params;
+    const result = await jadwalService.delete(id);
+    if (!result) return res.status(404).json({ message: "Jadwal not found" });
+    res.status(204).send();
+  });
 }
