@@ -26,7 +26,9 @@ class jadwalController {
     const { id } = req.params;
     const parse = updateJadwalSchema.safeParse(req.body);
     if (!parse.success) return res.status(400).json({ error: parse.error.errors });
-    const data = await jadwalService.update(id, parse.data);    
+    const data = await jadwalService.update(id, parse.data);
+    if (!data) return res.status(404).json({ message: "Jadwal not found" });
+    res.json(data);
   })
   delete
 }
