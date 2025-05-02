@@ -15,11 +15,25 @@ function v1() {
   const router = express.Router();
 
   // Sapi routes
-  router.post('/sapi', handler.sapiHandler.addSapi);
-  router.get('/sapi', handler.sapiHandler.getAllSapi);
-  router.get('/sapi/:id', handler.sapiHandler.getSapiById);
-  router.delete('/sapi/:id', handler.sapiHandler.delSapi);
-  router.patch('/sapi/:id', handler.sapiHandler.updateSapi);
+  router.post('/sapi', handler.sapiHandler.create);
+  router.get('/sapi', handler.sapiHandler.getAll);
+  router.get('/sapi/:id', handler.sapiHandler.getById);
+  router.delete('/sapi/:id', handler.sapiHandler.delete);
+  router.patch('/sapi/:id', handler.sapiHandler.update);
+
+  // Sapi routes
+  router.post('/kandang', handler.kandangHandler.create);
+  router.get('/kandang', handler.kandangHandler.getAll);
+  router.get('/kandang/:id', handler.kandangHandler.getById);
+  router.delete('/kandang/:id', handler.kandangHandler.delete);
+  router.patch('/kandang/:id', handler.kandangHandler.update);
+
+  // Pakan routes
+  router.post('/pakan', handler.pakanHandler.create);
+  router.get('/pakan', handler.pakanHandler.getAll);
+  router.get('/pakan/:id', handler.pakanHandler.getById);
+  router.delete('/pakan/:id', handler.pakanHandler.delete);
+  router.patch('/pakan/:id', handler.pakanHandler.update);
 
   return router;
 }
