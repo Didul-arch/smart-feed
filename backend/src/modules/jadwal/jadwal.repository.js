@@ -13,7 +13,7 @@ class JadwalRepository {
   } 
 
   async update (id, data) {
-    return prisma.jadwalMakan.create({
+    return prisma.jadwalMakan.update({
       where: { id: Number(id) },
       data
     })
