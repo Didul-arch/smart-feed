@@ -1,16 +1,26 @@
-// untuk generate dan verify token
 const jwt = require('jsonwebtoken');
-const JWT_SECRET = process.env.JWT_SECRET || 'rahasia-super-aman'
+const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
 
 function generateToken(payload) {
-    return jwt.sign(payload, JWT_SECRET, { expiresIn: '1d'} );
+    return jwt.sign(payload, JWT_SECRET, { expiresIn: '1h' });
+}
+
+function generateRefreshToken(payload) {
+    return jwt.sign(payload, JWT_REFRESH_SECRET, { expiresIn: '7d' });
 }
 
 function verifyToken(token) {
     return jwt.verify(token, JWT_SECRET);
 }
 
+function verifyRefreshToken(token) {
+    return jwt.verify(token, JWT_REFRESH_SECRET);
+}
+
 module.exports = {
-    generateToken, 
-    verifyToken
+    generateToken,
+    generateRefreshToken,
+    verifyToken,
+    verifyRefreshToken
 };

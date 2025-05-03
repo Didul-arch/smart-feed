@@ -1,10 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const handler = require('../core/handler');
-const AppError = require('../core/helper/AppError');
 const authMiddleware = require('../core/auth/auth.middleware')
-const bcrypt = require('bcryptjs');
-const { generateToken } = require('../core/auth/jwt')
+
 
 function createRoute(app) {
   app.use(express.json());
@@ -19,21 +17,8 @@ function v1() {
   const router = express.Router();
 
   // Auth
-  router.post('/login', async (req, res, next) => {
-    const { email, password } = req.body;
-    const user = await prisma.user.findUnique({
-      where: {email}
-    });
-    if(!user) throw new AppError('user not found!', 404);
-
-    const valid = await bcrypt.compare(password, user.password);
-    if(!valid) throw new AppError('Password salah', 401);
-
-    const token = generateToken({
-      id: user.id
-    })
-    res.json({ token });
-  });
+  router.post('/login', handler.authHandler.login);
+  router.post('/refresh', handler.authHandler.refresh);
 
   router.use(authMiddleware);
 
