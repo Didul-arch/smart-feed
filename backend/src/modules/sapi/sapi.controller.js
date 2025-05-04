@@ -1,7 +1,7 @@
 const sapiService = require('./sapi.service');
 const { createSapiSchema, updateSapiSchema } = require('./sapi.schema');
 const catchAsync = require('../../core/helper/catchAsync');
-const AppError = require('../../core/helper/AppError');
+const AppError = require('../../core/helper/appError');
 
 class SapiController {
   getById = catchAsync(async (req, res) => {

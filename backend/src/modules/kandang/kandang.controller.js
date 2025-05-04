@@ -1,7 +1,7 @@
 const kandangService = require('./kandang.service');
 const { createKandangSchema, updateKandangSchema } = require('./kandang.schema');
 const catchAsync = require('../../core/helper/catchAsync');
-const AppError = require('../../core/helper/AppError');
+const AppError = require('../../core/helper/appError');
 
 class KandangController {
   getAll = catchAsync(async (req, res) => {

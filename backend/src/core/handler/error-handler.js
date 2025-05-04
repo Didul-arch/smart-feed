@@ -1,5 +1,5 @@
 const catchAsync = require('../helper/catchAsync');
-const AppError = require('../helper/AppError');
+const AppError = require('../helper/appError');
 
 const notFoundHandler = catchAsync((req, res) => {
   throw new AppError('Not Found', 404);

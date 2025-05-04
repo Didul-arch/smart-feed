@@ -1,7 +1,7 @@
 const pakanService = require('./pakan.service');
 const { createPakanSchema, updatePakanSchema } = require('./pakan.schema');
 const catchAsync = require('../../core/helper/catchAsync');
-const AppError = require('../../core/helper/AppError');
+const AppError = require('../../core/helper/appError');
 
 class PakanController {
   getAll = catchAsync(async (req, res) => {

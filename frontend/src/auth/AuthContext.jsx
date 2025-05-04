@@ -75,7 +75,7 @@ export function AuthProvider({ children }) {
             // 6. kalo error/gagal, dispatchnya pake yang tipe failure
             dispatch({
                 type: 'LOGIN_FAILURE',
-                payload: error.response?.data?.message || 'Login Gagal'
+                payload: err.response?.data?.message || 'Login Gagal'
             }) 
             return false;
         }

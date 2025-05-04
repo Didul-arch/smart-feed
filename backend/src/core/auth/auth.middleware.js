@@ -1,5 +1,5 @@
 const { verifyToken } = require("./jwt");
-const AppError = require("../helper/AppError");
+const AppError = require("../helper/appError");
 const catchAsync = require("../helper/catchAsync");
 
 const authMiddleware = catchAsync(async (req, res, next) => {

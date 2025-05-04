@@ -1,7 +1,8 @@
 const bcrypt = require('bcryptjs');
 const { generateToken, generateRefreshToken } = require('./jwt')
-const AppError = require('../helper/AppError');
+const AppError = require('../helper/appError');
 const prisma = require('../../db');
+const catchAsync = require('../helper/catchAsync')
 
 class authController {
   login = catchAsync(async (req, res) => {

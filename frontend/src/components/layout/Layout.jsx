@@ -1,5 +1,5 @@
 import { Outlet } from 'react-router-dom';
-import MobileNavbar from '../ui/navbar';
+import MobileNavbar from '../ui/Navbar';
 
 const Layout = () => {
 
