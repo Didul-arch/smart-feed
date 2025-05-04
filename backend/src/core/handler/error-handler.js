@@ -1,5 +1,5 @@
 const catchAsync = require('../helper/catchAsync');
-const AppError = require('../helper/AppError');
+const AppError = require('../helper/appError');
 
 const notFoundHandler = catchAsync((req, res) => {
   throw new AppError('Not Found', 404);
@@ -40,7 +40,7 @@ const sendErrorProd = (err, res) => {
 const globalErrorHandler = (
   err, req, res, next
 ) => {
-  console.log('err', err.issues)
+  console.log('err', err);
   if (err.name === 'ZodError') {
     if ('issues' in err && Array.isArray(err.issues) && err.issues[0]?.message) {
       err = new AppError(err.issues[0].path[0] + ' ' + err.issues[0].message, 400);

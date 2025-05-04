@@ -1,6 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const handler = require('../core/handler');
+const authMiddleware = require('../core/auth/auth.middleware')
+
 
 function createRoute(app) {
   app.use(express.json());
@@ -13,6 +15,12 @@ function createRoute(app) {
 
 function v1() {
   const router = express.Router();
+
+  // Auth
+  router.post('/login', handler.authHandler.login);
+  router.post('/refresh', handler.authHandler.refresh);
+
+  router.use(authMiddleware);
 
   // Sapi routes
   router.post('/sapi', handler.sapiHandler.create);
