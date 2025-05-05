@@ -1,84 +1,92 @@
 import axios from 'axios';
+import { jwtDecode } from 'jwt-decode';
 
-const BASE_URL = import.meta.env.VITE_BASE_URL
+const baseURL = import.meta.env.VITE_BASE_URL;
 
-// buat instance axios dengan baseurl
 const api = axios.create({
-    baseURL: BASE_URL
+  baseURL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
 
+// Request interceptor to add token to all requests
 api.interceptors.request.use(
-    (config) => {
-        // 1. ambil token dari local storage
-        const token = localStorage.getItem('token');
-
-        // 2. jika token ada, tambahkan ke header authorization
-        if(token) {
-            config.headers['Authorization'] = `Bearer ${token}`;
+  async (config) => {
+    const accessToken = localStorage.getItem('accessToken');
+    
+    if (accessToken) {
+      // Check if token is expired
+      const isTokenExpired = () => {
+        try {
+          const decoded = jwtDecode(accessToken);
+          const currentTime = Date.now() / 1000;
+          return decoded.exp < currentTime;
+        } catch (error) {
+          return true;
         }
-        return config;
-    },
-    (error) => Promise.reject(error)
+      };
+      
+      // If token is expired, try to refresh
+      if (isTokenExpired()) {
+        try {
+          // Get refresh token
+          const refreshToken = localStorage.getItem('refreshToken');
+          
+          if (!refreshToken) {
+            throw new Error('No refresh token available');
+          }
+          
+          // Call refresh endpoint
+          const response = await axios.post(`${baseURL}/refresh`, {
+            refreshToken
+          });
+          
+          if (response.data.status === 'success') {
+            // Update access token in storage
+            const newAccessToken = response.data.data.accessToken;
+            localStorage.setItem('accessToken', newAccessToken);
+            
+            // Use new token for current request
+            config.headers.Authorization = `Bearer ${newAccessToken}`;
+          } else {
+            // Clear tokens if refresh failed
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+            window.location.href = '/login';
+          }
+        } catch (error) {
+          // Clear tokens on error
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
+          window.location.href = '/login';
+        }
+      } else {
+        // Use existing token
+        config.headers.Authorization = `Bearer ${accessToken}`;
+      }
+    }
+    
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
 );
 
-// response interceptor: jalankan setelah response diterima
+// Response interceptor to handle errors
 api.interceptors.response.use(
-    // jika response success, return langsung
-    (response) => response,
-
-    // kalo error (4xx, 5xx)
-    async(error)=>{
-        //cek apakah errornya karena expired (401)
-        if(error.response?.status === 401){
-            // simpan request asli untuk diretry nanti
-            const originalRequest = error.config;
-
-            // cek apakah req belom pernah diretry untuk hindari infinite loop
-            if(!originalRequest._retry){
-                originalRequest._retry = true;
-
-                try {
-                    // ambil refreshtoken dan coba dapet token baru
-                    const refreshToken = localStorage.getItem('refreshToken');
-                    const response = await axios.post(`${BASE_URL}/refresh`, { refreshToken });
-                    const newToken = response.data.token;
-
-                    //update token di local storage
-                    localStorage.setItem('token', newToken);
-
-                    // update token di request asli dan retry
-                    originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
-                    return api(originalRequest);
-
-                } catch (refreshErr) {
-                    //refresh token invalid/expired, login ulang
-                    localStorage.removeItem('token');
-                    localStorage.removeItem('refreshToken');
-                    window.location.href = '/login';
-                    return Promise.reject(refreshErr);
-                }
-            }
-        }
-
-        return Promise.reject(error);
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // If unauthorized, redirect to login
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      window.location.href = '/login';
     }
+    
+    return Promise.reject(error);
+  }
 );
 
 export default api;
-
-// import axios from 'axios';
-
-// const api = axios.create({
-//   baseURL: import.meta.env.VITE_BASE_URL
-// });
-
-// // Interceptor: otomatis pasang Authorization header jika ada token
-// api.interceptors.request.use((config) => {
-//   const token = localStorage.getItem('token');
-//   if (token) {
-//     config.headers.Authorization = `Bearer ${token}`;
-//   }
-//   return config;
-// });
-
-// export default api;

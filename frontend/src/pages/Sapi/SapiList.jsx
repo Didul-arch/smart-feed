@@ -1,88 +1,164 @@
-import { useState, useEffect } from 'react';
-import { Link, useParams } from 'react-router-dom';
-import axios from 'axios';
+import { useState } from "react";
+import { Link, useParams, useNavigate } from "react-router-dom";
+import { useFetchData, useSubmitData } from "../../hooks/useAPI";
 
-export default function SapiList() {
+const SapiList = () => {
   const { kandangId } = useParams();
-  const [sapiList, setSapiList] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const BASE_URL = import.meta.env.VITE_BASE_URL || 'http://localhost:3000';
-  
-  useEffect(() => {
-    const fetchSapiInKandang = async () => {
+  const navigate = useNavigate();
+  const { data: sapiList, loading, error, refresh } = useFetchData(`/sapi/kandang/${kandangId}`);
+  const { data: kandang } = useFetchData(`/kandang/${kandangId}`);
+
+  // For add/delete functionality
+  const { submitData, loading: submitting } = useSubmitData();
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newSapi, setNewSapi] = useState({
+    nama: "",
+    jenis: "",
+    tanggal_lahir: "",
+    berat: ""
+  });
+
+  const handleAdd = async (e) => {
+    e.preventDefault();
+    try {
+      await submitData(`/sapi`, "POST", {
+        ...newSapi,
+        kandang_id: parseInt(kandangId),
+        berat: parseFloat(newSapi.berat)
+      });
+      setShowAddForm(false);
+      setNewSapi({ nama: "", jenis: "", tanggal_lahir: "", berat: "" });
+      refresh();
+    } catch (error) {
+      console.error("Failed to add sapi:", error);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm("Are you sure you want to delete this sapi?")) {
       try {
-        // Fetch semua sapi
-        const response = await axios.get(`${BASE_URL}/api/v1/sapi`);
-        
-        // Filter sapi berdasarkan kandangId
-        const filteredSapi = response.data.filter(sapi => 
-          sapi.idKandang === kandangId
-        );
-        
-        setSapiList(filteredSapi);
+        await submitData(`/sapi/${id}`, "DELETE");
+        refresh();
       } catch (error) {
-        console.error('Error fetching data:', error);
-      } finally {
-        setLoading(false);
+        console.error("Failed to delete sapi:", error);
       }
-    };
-    
-    fetchSapiInKandang();
-  }, [BASE_URL, kandangId]);
-  
+    }
+  };
+
+  if (loading) return <div className="p-4">Loading...</div>;
+  if (error) return <div className="p-4 text-red-500">Error: {error}</div>;
+
   return (
-    <div className="bg-gray-50 min-h-screen pb-20">
-      <div className="flex items-center mb-4 p-4">
-        <Link to="/sapi" className="mr-2">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-        </Link>
-        <h1 className="text-2xl font-semibold text-gray-700">
-          Kandang {kandangId}
+    <div className="p-4">
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl font-bold">
+          {kandang ? `Sapi di ${kandang.nama}` : 'Daftar Sapi'}
         </h1>
+        <button
+          onClick={() => navigate('/sapi')}
+          className="px-3 py-1 text-sm border rounded hover:bg-gray-100"
+        >
+          Back
+        </button>
       </div>
-      
-      {loading ? (
-        <div className="flex justify-center items-center h-64">
-          <p>Loading sapi...</p>
-        </div>
-      ) : sapiList.length === 0 ? (
-        // Empty state
-        <div className="flex flex-col items-center justify-center h-[70vh] text-gray-500">
-          <h2 className="text-xl font-medium mb-4">Belum ada sapi di kandang ini</h2>
-          <p className="mb-4">Tambahkan sapi untuk mulai</p>
-          
-          {/* Add sapi button */}
-          <button className="bg-green-500 text-white px-4 py-2 rounded-lg font-medium">
-            Tambah Sapi
+
+      <div className="mb-4">
+        <button
+          onClick={() => setShowAddForm(!showAddForm)}
+          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+        >
+          {showAddForm ? "Cancel" : "Add New Sapi"}
+        </button>
+      </div>
+
+      {showAddForm && (
+        <form onSubmit={handleAdd} className="mb-6 p-4 border rounded">
+          <div className="grid gap-4 mb-4 sm:grid-cols-2">
+            <div>
+              <label className="block mb-1">Nama</label>
+              <input
+                type="text"
+                value={newSapi.nama}
+                onChange={(e) => setNewSapi({ ...newSapi, nama: e.target.value })}
+                className="w-full p-2 border rounded"
+                required
+              />
+            </div>
+            <div>
+              <label className="block mb-1">Jenis</label>
+              <input
+                type="text"
+                value={newSapi.jenis}
+                onChange={(e) => setNewSapi({ ...newSapi, jenis: e.target.value })}
+                className="w-full p-2 border rounded"
+                required
+              />
+            </div>
+            <div>
+              <label className="block mb-1">Tanggal Lahir</label>
+              <input
+                type="date"
+                value={newSapi.tanggal_lahir}
+                onChange={(e) => setNewSapi({ ...newSapi, tanggal_lahir: e.target.value })}
+                className="w-full p-2 border rounded"
+                required
+              />
+            </div>
+            <div>
+              <label className="block mb-1">Berat (kg)</label>
+              <input
+                type="number"
+                value={newSapi.berat}
+                onChange={(e) => setNewSapi({ ...newSapi, berat: e.target.value })}
+                className="w-full p-2 border rounded"
+                step="0.1"
+                required
+              />
+            </div>
+          </div>
+          <button
+            type="submit"
+            disabled={submitting}
+            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+          >
+            {submitting ? "Saving..." : "Save Sapi"}
           </button>
-        </div>
-      ) : (
-        // List of sapi
-        <div className="mx-4 space-y-3">
-          {sapiList.map(sapi => (
-            <Link to={`/sapi/${sapi.id}`} key={sapi.id}>
-              <div className="bg-white p-4 rounded-lg shadow-sm">
-                <h3 className="font-medium text-gray-800">{sapi.jenis}</h3>
-                <div className="mt-2 flex justify-between">
-                  <span className="text-sm text-gray-500">Bobot: {sapi.bobot} kg</span>
-                  <span className="text-sm text-gray-500">
-                    {new Date(sapi.tanggalLahir).toLocaleDateString('id-ID')}
-                  </span>
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
+        </form>
       )}
-      
-      {/* Floating Action Button */}
-      <button className="fixed right-6 bottom-6 bg-green-400 text-white rounded-full p-4 shadow-lg">
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-        </svg>
-      </button>
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        {sapiList?.map((sapi) => (
+          <div key={sapi.id} className="border rounded-lg p-4 flex justify-between">
+            <div>
+              <h3 className="font-semibold">{sapi.nama}</h3>
+              <p className="text-sm text-gray-600">Jenis: {sapi.jenis}</p>
+              <p className="text-sm text-gray-600">Berat: {sapi.berat} kg</p>
+            </div>
+            <div className="flex flex-col space-y-2">
+              <Link
+                to={`/sapi/detail/${sapi.id}`}
+                className="px-3 py-1 text-sm bg-blue-500 text-white rounded text-center hover:bg-blue-600"
+              >
+                Detail
+              </Link>
+              <button
+                onClick={() => handleDelete(sapi.id)}
+                className="px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        ))}
+
+        {!sapiList?.length && (
+          <div className="col-span-full text-center py-8 text-gray-500">
+            Tidak ada sapi di kandang ini
+          </div>
+        )}
+      </div>
     </div>
   );
-}
+};
+
+export default SapiList;

@@ -1,32 +1,79 @@
-import { useState, useEffect } from 'React';
-import axios from 'axios';
+import { useState, useEffect } from 'react';
+import api from '../services/api';
 
-export const useFetchData = (endPoint, baseUrl) => {
-  const [state, setState] = useState({
-    data: null,
-    loading: false,
-    error: null
-  });
+export const useFetchData = (url, options = {}) => {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [refetch, setRefetch] = useState(0);
+
+  // Function to trigger a refetch
+  const refresh = () => {
+    setRefetch(prev => prev + 1);
+  };
 
   useEffect(() => {
-    setState(prev => ({ ...prev, loading:true }));
+    let isMounted = true;
+    
+    const fetchData = async () => {
+      setLoading(true);
+      
+      try {
+        const response = await api.get(url, options);
+        
+        if (isMounted) {
+          setData(response.data.data || response.data);
+          setError(null);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError(err.response?.data?.message || err.message);
+          setData(null);
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
 
-    axios.get(`${baseUrl}/${endPoint}`)
-      .then((response) => {
-        setState({
-          data: response.data,
-          loading: false,
-          error: null
-        });
-      })
-      .catch((err) => {
-        setState({
-          data: null,
-          loading: false,
-          error: err.message
-        });
-      })
-  }, [endpoint, baseUrl]);
-  
-  return state;
-}
+    fetchData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [url, refetch, options]);
+
+  return { data, loading, error, refresh };
+};
+
+export const useSubmitData = () => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(false);
+
+  const submitData = async (url, method, data) => {
+    setLoading(true);
+    setError(null);
+    setSuccess(false);
+
+    try {
+      const response = await api({
+        url,
+        method,
+        data
+      });
+      
+      setSuccess(true);
+      return response.data;
+    } catch (err) {
+      const message = err.response?.data?.message || 'An error occurred';
+      setError(message);
+      throw new Error(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { submitData, loading, error, success };
+};

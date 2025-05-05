@@ -1,95 +1,188 @@
-import { createContext, useReducer } from 'react';
-import axios from 'axios';
+import { createContext, useState, useEffect } from 'react';
+import { jwtDecode } from 'jwt-decode';
+import api from '../services/api';
+import { useLocation } from 'react-router-dom';
 
-// buat context untuk share state auth ke seluruh aplikasi
-export const AuthContext = createContext();
+export const AuthContext = createContext(null);
 
-// state awal autentikasi
-const initialState = {
-    user: null,
-    token: localStorage.getItem('token'),
-    refreshToken: localStorage.getItem('refreshToken'),
-    isAuthenticated: !!localStorage.getItem('token'),
-    isLoading: false,
-    error: null
-};
+export const AuthProvider = ({ children }) => {
+  const [currentUser, setCurrentUser] = useState(null);
+  const [accessToken, setAccessToken] = useState(localStorage.getItem('accessToken') || null);
+  const [refreshToken, setRefreshToken] = useState(localStorage.getItem('refreshToken') || null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
-// reducer: cara react mengelola state yang kompleks
-function authReducer(state, action) {
-    switch (action.type) {
-        case 'LOGIN_REQUEST': // kalo user lagi proses login
-            return { ...state, isLoading:true, error: null };   
-        case 'LOGIN_SUCCESS': // kalo user berhasil login
-            return {
-                ...state,
-                isLoading: false,
-                isAuthenticated: true,
-                token: action.payload.token,
-                refreshToken: action.payload.refreshToken,
-                user: action.payload.user,
-                error: null
-            };
-        case 'LOGIN_FAILURE': // gagal login
-            return { ...state, isLoading: false, error: action.payload };
-        case 'LOGOUT': // ya logout
-            return { ...initialState, token: null, refreshToken: null, isAuthenticated:false };
-        default:
-            return state;
+  const location = useLocation();
+
+  // Check if token is expired
+  const isTokenExpired = (token) => {
+    if (!token) return true;
+
+    try {
+      const decoded = jwtDecode(token);
+      const currentTime = Date.now() / 1000;
+      // Debug line inside your isTokenExpired interceptor
+      console.log(`Token validation: current=${currentTime}, expires=${decoded.exp}, isExpired=${decoded.exp < currentTime}`);
+      return decoded.exp < currentTime;
+    } catch (err) {
+      return true;
     }
-}
+  };
 
-export function AuthProvider({ children }) {
-    // useReducer: hook untuk state management kompleks
-    // state: data state saat ini
-    // dispatch: fungsi untuk update state
-    const [state, dispatch] = useReducer(authReducer, initialState);
-    
-    const BASE_URL = import.meta.env.VITE_BASE_URL
+  // Set authentication tokens
+  const setAuthTokens = (accessToken, refreshToken) => {
+    localStorage.setItem('accessToken', accessToken);
+    localStorage.setItem('refreshToken', refreshToken);
+    setAccessToken(accessToken);
+    setRefreshToken(refreshToken);
+  };
 
-    // fungsi login: mengirim email dan password ke api login
-    const login = async (email, password) => {
-        // 1. update state menggunakan dispatch untuk nanti ditangkep
-        // sama si authreducer buat ngeubah statenya nanti
-        dispatch({ type: 'LOGIN_REQUEST' });
+  // Clear authentication tokens
+  const clearAuthTokens = () => {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    setAccessToken(null);
+    setRefreshToken(null);
+    setCurrentUser(null);
+  };
 
-        try {
-            // 2. kirim request ke endpoint login
-            const response = await axios.post(`${BASE_URL}/login`, { email, password });
+  // Login function
+  const login = async (email, password) => {
+    setIsLoading(true);
+    setError('');
 
-            // 3. Ambil token dari response
-            const { token, refreshToken } = response.data;
+    try {
+      const response = await api.post('/login', { email, password });
 
-            // 4. simpen token di local storage agar gak ilang kalo refresh webnya
-            localStorage.setItem('token', token);
-            localStorage.setItem('refreshToken', refreshToken);
+      if (response.data.status === 'success') {
+        const { accessToken, refreshToken } = response.data.data;
+        const user = response.data.data.user;
 
-            // 5. update state auth menjadi LOGIN_SUCCESS biar nanti
-            // masuk ke reducer terus state nya berubah.
-            dispatch({
-                type: 'LOGIN_SUCCESS',
-                payload: { token, refreshToken, user: { email }}
-            });
+        setAuthTokens(accessToken, refreshToken);
+        setCurrentUser(user);
+        return true;
+      }
 
-            return true;
-        } catch (err) {
-            // 6. kalo error/gagal, dispatchnya pake yang tipe failure
-            dispatch({
-                type: 'LOGIN_FAILURE',
-                payload: err.response?.data?.message || 'Login Gagal'
-            }) 
-            return false;
+      return false;
+    } catch (err) {
+      const message = err.response?.data?.message || 'Login failed';
+      setError(message);
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Logout function
+  const logout = () => {
+    clearAuthTokens();
+  };
+
+  // Refresh token function
+  const refreshAccessToken = async () => {
+    if (!refreshToken) return false;
+
+    try {
+      const response = await api.post('/refresh', { refreshToken });
+
+      if (response.data.status === 'success') {
+        const { accessToken: newAccessToken } = response.data.data;
+        localStorage.setItem('accessToken', newAccessToken);
+        setAccessToken(newAccessToken);
+        return true;
+      }
+
+      return false;
+    } catch (err) {
+      clearAuthTokens();
+      return false;
+    }
+  };
+
+  // // Check authentication on mount
+  // useEffect(() => {
+  //   const checkAuth = async () => {
+  //     if (!accessToken || !refreshToken) {
+  //       clearAuthTokens();
+  //       return;
+  //     }
+
+  //     if (isTokenExpired(accessToken)) {
+  //       // Try to refresh the token
+  //       const success = await refreshAccessToken();
+  //       if (!success) {
+  //         clearAuthTokens();
+  //       } else if (accessToken) {
+  //         // Set user from token
+  //         try {
+  //           const decoded = jwtDecode(accessToken);
+  //           setCurrentUser({ id: decoded.id, email: decoded.email });
+  //         } catch (err) {
+  //           clearAuthTokens();
+  //         }
+  //       }
+  //     } else if (accessToken) {
+  //       // Set user from token
+  //       try {
+  //         const decoded = jwtDecode(accessToken);
+  //         setCurrentUser({ id: decoded.id, email: decoded.email });
+  //       } catch (err) {
+  //         clearAuthTokens();
+  //       }
+  //     }
+  //   };
+
+  //   checkAuth();
+  // }, []);
+
+  // Check authentication on location change
+  useEffect(() => {
+    const checkAuth = async () => {
+      if (!accessToken || !refreshToken) {
+        clearAuthTokens();
+        return;
+      }
+
+      if (isTokenExpired(accessToken)) {
+        // Try to refresh the token
+        const success = await refreshAccessToken();
+        if (!success) {
+          clearAuthTokens();
+        } else if (accessToken) {
+          // Set user from token
+          try {
+            const decoded = jwtDecode(accessToken);
+            setCurrentUser({ id: decoded.id, email: decoded.email });
+          } catch (err) {
+            clearAuthTokens();
+          }
         }
-    }
+      } else if (accessToken) {
+        // Set user from token
+        try {
+          const decoded = jwtDecode(accessToken);
+          setCurrentUser({ id: decoded.id, email: decoded.email });
+        } catch (err) {
+          clearAuthTokens();
+        }
+      }
+    };
 
-    const logout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('refreshToken');
-        dispatch({ type: 'LOGOUT' });
-    }
+    checkAuth();
+  }, [location.pathname]);
 
-    return (
-        <AuthContext.Provider value={{ ...state, login, logout }}>
-            {children}
-        </AuthContext.Provider>
-    )
-}
+  // Context value
+  const value = {
+    currentUser,
+    accessToken,
+    refreshToken,
+    isLoading,
+    error,
+    isAuthenticated: !!currentUser,
+    login,
+    logout,
+    refreshAccessToken
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
