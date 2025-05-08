@@ -1,54 +1,100 @@
-import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useFetchData } from "@/hooks/useAPI";
-import { useAuth } from "@/hooks/useAuth";
+
+// Import shadcn components
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+
+// Import icons
+import { Beef, Users, CookingPot, Eye } from "lucide-react";
 
 const Sapi = () => {
-  const { isAuthenticated } = useAuth();
-  const { data: kandangList, loading, error, refresh } = useFetchData("/kandang");
-
-  // If you need user information
-  const { currentUser } = useAuth();
-
-  useEffect(() => {
-    // You can use authentication data as needed
-    if (isAuthenticated) {
-      console.log("User is authenticated:", currentUser);
-    }
-  }, [isAuthenticated, currentUser]);
+  const { data: kandangList, loading, error } = useFetchData("/kandang");
 
   if (loading) return <div className="p-4">Loading...</div>;
   if (error) return <div className="p-4 text-red-500">Error: {error}</div>;
 
   return (
     <div className="p-4">
-      <h1 className="text-2xl font-bold mb-4">Daftar Kandang</h1>
-
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">Daftar Kandang</h1>
+        <Button size="sm" variant="outline">
+          + Tambah Kandang
+        </Button>
+      </div>
+      
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
         {kandangList?.map((kandang) => (
-          <Link
-            key={kandang.id}
-            to={`/sapi/${kandang.id}`}
-            className="block p-4 border rounded-lg hover:bg-gray-50"
-          >
-            <h2 className="text-xl font-semibold">{kandang.nama}</h2>
-            <p className="text-gray-600">Jumlah Sapi: {kandang.jumlahSapi || 0}</p>
-          </Link>
+          <Card key={kandang.id} className="overflow-hidden border-2 hover:border-primary transition-colors">
+            <CardHeader className="pb-2">
+              <div className="flex items-start justify-between">
+                <CardTitle className="text-lg font-bold">{kandang.nama}</CardTitle>
+                <Badge variant="outline" className="bg-primary/10 text-primary">
+                  Aktif
+                </Badge>
+              </div>
+              <CardDescription className="text-sm text-muted-foreground">
+                Kandang ID: #{kandang.id}
+              </CardDescription>
+            </CardHeader>
+            
+            <CardContent className="pb-3">
+              <div className="grid grid-cols-2 gap-3 mt-2">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 rounded-md bg-primary/10 text-primary">
+                    <Beef size={16} />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Total Sapi</p>
+                    <p className="text-sm font-semibold">{kandang.jumlahSapi || 0} ekor</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 rounded-md bg-green-500/10 text-green-500">
+                    <CookingPot size={16} />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Diberi Pakan</p>
+                    <p className="text-sm font-semibold">{kandang.jumlahDiberiPakan || 0} ekor</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+            
+            <CardFooter className="pt-0">
+              <Button 
+                variant="ghost" 
+                className="w-full justify-start gap-2 hover:text-primary"
+                asChild
+              >
+                <Link to={`/sapi/${kandang.id}`}>
+                  <Eye size={16} />
+                  <span>Lihat Detail Kandang</span>
+                </Link>
+              </Button>
+            </CardFooter>
+          </Card>
         ))}
-
+        
         {!kandangList?.length && (
-          <div className="col-span-full text-center py-8 text-gray-500">
-            No kandang available
+          <div className="col-span-full flex flex-col items-center justify-center p-12 text-center bg-muted/40 rounded-lg">
+            <Beef size={48} className="text-muted-foreground/50" />
+            <h3 className="mt-4 text-xl font-semibold">Belum Ada Kandang</h3>
+            <p className="text-muted-foreground mt-2">
+              Tambahkan kandang baru untuk mulai mengelola ternak sapi Anda
+            </p>
           </div>
         )}
       </div>
-
-      <button
-        onClick={refresh}
-        className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-      >
-        Refresh
-      </button>
     </div>
   );
 };

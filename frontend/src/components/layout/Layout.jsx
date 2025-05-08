@@ -1,20 +1,26 @@
 import { Outlet } from 'react-router-dom';
-import MobileNavbar from '../ui/Navbar';
+import AppSidebar from './Sidebar';
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 
 const Layout = () => {
-
-
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
-      {/* Main content area with padding for navbar at bottom */}
-      <main className="flex-grow pt-20">
-        {/* Router outlet - ini yang akan render component dari routes */}
-        <Outlet />
-      </main>
-
-      {/* Navbar di bagian bawah */}
-      <MobileNavbar />
-    </div>
+    <SidebarProvider defaultOpen={true}>
+      <div className="flex min-h-screen">
+        <AppSidebar />
+        <div className="flex-1">
+          <div className="container p-4 md:p-6 relative">
+            {/* Hamburger menu fixed di kiri atas */}
+            <div className="fixed top-4 left-4 z-40 md:hidden">
+              <SidebarTrigger />
+            </div>
+            
+            <main className="pt-12 md:pt-4">
+              <Outlet />
+            </main>
+          </div>
+        </div>
+      </div>
+    </SidebarProvider>
   );
 };
 

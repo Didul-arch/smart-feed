@@ -42,7 +42,7 @@ export const useFetchData = (url, options = {}) => {
     return () => {
       isMounted = false;
     };
-  }, [url, refetch, options]);
+  }, [url, refetch]);
 
   return { data, loading, error, refresh };
 };

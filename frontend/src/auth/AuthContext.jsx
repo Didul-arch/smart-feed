@@ -10,26 +10,22 @@ export const AuthProvider = ({ children }) => {
   const [accessToken, setAccessToken] = useState(localStorage.getItem('accessToken') || null);
   const [refreshToken, setRefreshToken] = useState(localStorage.getItem('refreshToken') || null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [error, setError] = useState('');
 
   const location = useLocation();
 
-  // Check if token is expired
   const isTokenExpired = (token) => {
     if (!token) return true;
-
     try {
       const decoded = jwtDecode(token);
       const currentTime = Date.now() / 1000;
-      // Debug line inside your isTokenExpired interceptor
-      console.log(`Token validation: current=${currentTime}, expires=${decoded.exp}, isExpired=${decoded.exp < currentTime}`);
       return decoded.exp < currentTime;
-    } catch (err) {
+    } catch {
       return true;
     }
   };
 
-  // Set authentication tokens
   const setAuthTokens = (accessToken, refreshToken) => {
     localStorage.setItem('accessToken', accessToken);
     localStorage.setItem('refreshToken', refreshToken);
@@ -37,7 +33,6 @@ export const AuthProvider = ({ children }) => {
     setRefreshToken(refreshToken);
   };
 
-  // Clear authentication tokens
   const clearAuthTokens = () => {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
@@ -46,132 +41,80 @@ export const AuthProvider = ({ children }) => {
     setCurrentUser(null);
   };
 
-  // Login function
   const login = async (email, password) => {
     setIsLoading(true);
     setError('');
-
     try {
       const response = await api.post('/login', { email, password });
-
       if (response.data.status === 'success') {
-        const { accessToken, refreshToken } = response.data.data;
-        const user = response.data.data.user;
-
+        const { accessToken, refreshToken, user } = response.data.data;
         setAuthTokens(accessToken, refreshToken);
         setCurrentUser(user);
         return true;
       }
-
       return false;
     } catch (err) {
-      const message = err.response?.data?.message || 'Login failed';
-      setError(message);
+      setError(err.response?.data?.message || 'Login failed');
       return false;
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Logout function
   const logout = () => {
     clearAuthTokens();
   };
 
-  // Refresh token function
   const refreshAccessToken = async () => {
     if (!refreshToken) return false;
-
     try {
       const response = await api.post('/refresh', { refreshToken });
-
       if (response.data.status === 'success') {
         const { accessToken: newAccessToken } = response.data.data;
-        localStorage.setItem('accessToken', newAccessToken);
-        setAccessToken(newAccessToken);
+        setAuthTokens(newAccessToken, refreshToken);
         return true;
       }
-
       return false;
-    } catch (err) {
+    } catch {
       clearAuthTokens();
       return false;
     }
   };
 
-  // // Check authentication on mount
-  // useEffect(() => {
-  //   const checkAuth = async () => {
-  //     if (!accessToken || !refreshToken) {
-  //       clearAuthTokens();
-  //       return;
-  //     }
-
-  //     if (isTokenExpired(accessToken)) {
-  //       // Try to refresh the token
-  //       const success = await refreshAccessToken();
-  //       if (!success) {
-  //         clearAuthTokens();
-  //       } else if (accessToken) {
-  //         // Set user from token
-  //         try {
-  //           const decoded = jwtDecode(accessToken);
-  //           setCurrentUser({ id: decoded.id, email: decoded.email });
-  //         } catch (err) {
-  //           clearAuthTokens();
-  //         }
-  //       }
-  //     } else if (accessToken) {
-  //       // Set user from token
-  //       try {
-  //         const decoded = jwtDecode(accessToken);
-  //         setCurrentUser({ id: decoded.id, email: decoded.email });
-  //       } catch (err) {
-  //         clearAuthTokens();
-  //       }
-  //     }
-  //   };
-
-  //   checkAuth();
-  // }, []);
-
-  // Check authentication on location change
   useEffect(() => {
     const checkAuth = async () => {
+      setIsCheckingAuth(true);
       if (!accessToken || !refreshToken) {
         clearAuthTokens();
+        setIsCheckingAuth(false);
         return;
       }
-
       if (isTokenExpired(accessToken)) {
-        // Try to refresh the token
         const success = await refreshAccessToken();
         if (!success) {
           clearAuthTokens();
-        } else if (accessToken) {
-          // Set user from token
+        } else {
           try {
-            const decoded = jwtDecode(accessToken);
+            const decoded = jwtDecode(localStorage.getItem('accessToken'));
             setCurrentUser({ id: decoded.id, email: decoded.email });
-          } catch (err) {
+          } catch {
             clearAuthTokens();
           }
         }
-      } else if (accessToken) {
-        // Set user from token
+      } else {
         try {
           const decoded = jwtDecode(accessToken);
           setCurrentUser({ id: decoded.id, email: decoded.email });
-        } catch (err) {
+        } catch {
           clearAuthTokens();
         }
       }
+      setIsCheckingAuth(false);
     };
-
     checkAuth();
+    // eslint-disable-next-line
   }, [location.pathname]);
 
-  // Context value
   const value = {
     currentUser,
     accessToken,
@@ -179,9 +122,10 @@ export const AuthProvider = ({ children }) => {
     isLoading,
     error,
     isAuthenticated: !!currentUser,
+    isCheckingAuth,
     login,
     logout,
-    refreshAccessToken
+    refreshAccessToken,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
