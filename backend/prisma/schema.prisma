@@ -59,6 +59,7 @@ model Pakan{
 model JadwalMakan{
     id Int @id @default(autoincrement())
     tanggal DateTime
+    waktu String
     sapi Sapi @relation(fields: [sapiId], references: [id])
     sapiId Int
     pakan Pakan @relation(fields: [pakanId], references: [id])

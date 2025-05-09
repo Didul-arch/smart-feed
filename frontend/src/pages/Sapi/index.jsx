@@ -54,7 +54,7 @@ const Sapi = () => {
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Total Sapi</p>
-                    <p className="text-sm font-semibold">{kandang.jumlahSapi || 0} ekor</p>
+                    <p className="text-sm font-semibold">{kandang._count.sapi || 0} ekor</p>
                   </div>
                 </div>
                 
