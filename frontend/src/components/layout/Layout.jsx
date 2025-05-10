@@ -1,20 +1,18 @@
 import { Outlet } from 'react-router-dom';
-import MobileNavbar from '../ui/Navbar';
+import AppSidebar from './Sidebar';
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 
 const Layout = () => {
-
-
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
-      {/* Main content area with padding for navbar at bottom */}
-      <main className="flex-grow pt-20">
-        {/* Router outlet - ini yang akan render component dari routes */}
-        <Outlet />
+    <SidebarProvider>
+      <AppSidebar />
+      <main className='p-2 w-full'>
+        <SidebarTrigger />
+        <div className="p-6">
+          <Outlet/>
+        </div>
       </main>
-
-      {/* Navbar di bagian bawah */}
-      <MobileNavbar />
-    </div>
+    </SidebarProvider>
   );
 };
 

@@ -1,131 +1,183 @@
-import { useState, useEffect } from 'react';
-import { Link, useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { useFetchData, useSubmitData } from "../../hooks/useAPI";
+import { useAuth } from "../../hooks/useAuth";
 
-export default function SapiDetail() {
+const SapiDetail = () => {
   const { id } = useParams();
-  const [sapi, setSapi] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const navigate = useNavigate();
-  const BASE_URL = import.meta.env.VITE_BASE_URL || 'http://localhost:3000';
+  const { currentUser } = useAuth();
+  const { data: sapi, loading, error, refresh } = useFetchData(`/sapi/${id}`);
+  const { submitData, loading: submitting } = useSubmitData();
 
-  useEffect(() => {
-    const fetchSapi = async () => {
-      try {
-        const response = await axios.get(`${BASE_URL}/api/v1/sapi/${id}`);
-        setSapi(response.data);
-      } catch (err) {
-        console.error('Error fetching sapi:', err);
-        setError('Gagal mengambil data sapi');
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchSapi();
-  }, [BASE_URL, id]);
-  
-  const handleDelete = async () => {
-    if (confirm('Yakin ingin menghapus sapi ini?')) {
-      try {
-        await axios.delete(`${BASE_URL}/api/v1/sapi/${id}`);
-        alert('Sapi berhasil dihapus');
-        // Navigate back to kandang list
-        navigate(`/sapi/kandang/${sapi.idKandang}`);
-      } catch (err) {
-        console.error('Error deleting sapi:', err);
-        alert('Gagal menghapus sapi');
-      }
+  const [isEditing, setIsEditing] = useState(false);
+  const [formData, setFormData] = useState({
+    nama: "",
+    jenis: "",
+    tanggal_lahir: "",
+    berat: ""
+  });
+
+  // Start editing with current data
+  const startEdit = () => {
+    setFormData({
+      nama: sapi.nama,
+      jenis: sapi.jenis,
+      tanggal_lahir: sapi.tanggal_lahir,
+      berat: sapi.berat
+    });
+    setIsEditing(true);
+  };
+
+  // Cancel editing
+  const cancelEdit = () => {
+    setIsEditing(false);
+  };
+
+  // Handle form submission
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await submitData(`/sapi/${id}`, "PATCH", {
+        ...formData,
+        berat: parseFloat(formData.berat)
+      });
+      setIsEditing(false);
+      refresh();
+    } catch (error) {
+      console.error("Failed to update sapi:", error);
     }
   };
-  
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <p>Loading...</p>
-      </div>
-    );
-  }
 
-  if (error || !sapi) {
-    return (
-      <div className="p-4">
-        <p className="text-red-500">{error || 'Sapi tidak ditemukan'}</p>
-        <Link to="/sapi" className="text-blue-500 mt-4 block">
-          Kembali ke daftar kandang
-        </Link>
-      </div>
-    );
-  }
+  if (loading) return <div className="p-4">Loading...</div>;
+  if (error) return <div className="p-4 text-red-500">Error: {error}</div>;
+  if (!sapi) return <div className="p-4">Sapi not found</div>;
 
   return (
-    <div className="bg-gray-50 min-h-screen pb-20">
-      <div className="flex items-center mb-4 p-4">
-        <Link to={`/sapi/kandang/${sapi.idKandang}`} className="mr-2">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-        </Link>
-        <h1 className="text-2xl font-semibold text-gray-700">
-          Detail Sapi
-        </h1>
+    <div className="p-4">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Detail Sapi</h1>
+        <button
+          onClick={() => navigate(`/sapi/${sapi.kandang_id}`)}
+          className="px-3 py-1 text-sm border rounded hover:bg-gray-100"
+        >
+          Back
+        </button>
       </div>
-      
-      {/* Sapi Image */}
-      <div className="mx-4 mb-4">
-        <img 
-          src={sapi.image || 'https://via.placeholder.com/400x300?text=Foto+Sapi'} 
-          alt="Foto Sapi"
-          className="w-full h-48 object-cover rounded-lg" 
-        />
-      </div>
-      
-      {/* Sapi Details */}
-      <div className="mx-4 bg-white rounded-lg shadow p-4">
-        <div className="mb-4">
-          <h3 className="text-sm font-medium text-gray-500">Jenis</h3>
-          <p className="text-lg">{sapi.jenis}</p>
+
+      {isEditing ? (
+        <form onSubmit={handleSubmit} className="p-4 border rounded">
+          <div className="grid gap-4 mb-4 sm:grid-cols-2">
+            <div>
+              <label className="block mb-1">Nama</label>
+              <input
+                type="text"
+                value={formData.nama}
+                onChange={(e) => setFormData({ ...formData, nama: e.target.value })}
+                className="w-full p-2 border rounded"
+                required
+              />
+            </div>
+            <div>
+              <label className="block mb-1">Jenis</label>
+              <input
+                type="text"
+                value={formData.jenis}
+                onChange={(e) => setFormData({ ...formData, jenis: e.target.value })}
+                className="w-full p-2 border rounded"
+                required
+              />
+            </div>
+            <div>
+              <label className="block mb-1">Tanggal Lahir</label>
+              <input
+                type="date"
+                value={formData.tanggal_lahir}
+                onChange={(e) => setFormData({ ...formData, tanggal_lahir: e.target.value })}
+                className="w-full p-2 border rounded"
+                required
+              />
+            </div>
+            <div>
+              <label className="block mb-1">Berat (kg)</label>
+              <input
+                type="number"
+                value={formData.berat}
+                onChange={(e) => setFormData({ ...formData, berat: e.target.value })}
+                className="w-full p-2 border rounded"
+                step="0.1"
+                required
+              />
+            </div>
+          </div>
+          <div className="flex space-x-2">
+            <button
+              type="submit"
+              disabled={submitting}
+              className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+            >
+              {submitting ? "Saving..." : "Save Changes"}
+            </button>
+            <button
+              type="button"
+              onClick={cancelEdit}
+              className="px-4 py-2 border rounded hover:bg-gray-100"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      ) : (
+        <div className="bg-white p-6 rounded-lg border">
+          <div className="mb-6">
+            <h2 className="text-xl font-bold text-gray-800">{sapi.nama}</h2>
+            <p className="text-gray-500 text-sm">ID: {sapi.id}</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <p className="text-sm text-gray-600">Jenis</p>
+              <p className="font-semibold">{sapi.jenis}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Berat</p>
+              <p className="font-semibold">{sapi.berat} kg</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Tanggal Lahir</p>
+              <p className="font-semibold">
+                {new Date(sapi.tanggal_lahir).toLocaleDateString()}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Usia</p>
+              <p className="font-semibold">
+                {calculateAge(sapi.tanggal_lahir)} hari
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-6">
+            <button
+              onClick={startEdit}
+              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            >
+              Edit Data
+            </button>
+          </div>
         </div>
-        
-        <div className="mb-4">
-          <h3 className="text-sm font-medium text-gray-500">Bobot</h3>
-          <p className="text-lg">{sapi.bobot} kg</p>
-        </div>
-        
-        <div className="mb-4">
-          <h3 className="text-sm font-medium text-gray-500">Kandang</h3>
-          <p className="text-lg">Kandang {sapi.idKandang}</p>
-        </div>
-        
-        <div className="mb-4">
-          <h3 className="text-sm font-medium text-gray-500">Tanggal Lahir</h3>
-          <p className="text-lg">{new Date(sapi.tanggalLahir).toLocaleDateString('id-ID')}</p>
-        </div>
-        
-        {/* Action Buttons */}
-        <div className="flex space-x-3 mt-6">
-          <Link 
-            to={`/sapi/${id}/edit`} 
-            className="flex-1 bg-blue-500 text-white py-2 rounded-lg text-center font-medium"
-          >
-            Edit
-          </Link>
-          
-          <button 
-            onClick={handleDelete} 
-            className="flex-1 bg-red-500 text-white py-2 rounded-lg font-medium"
-          >
-            Hapus
-          </button>
-        </div>
-      </div>
-      
-      {/* Feeding Schedule Section */}
-      <div className="mx-4 mt-6">
-        <h2 className="text-xl font-medium mb-3">Jadwal Makan</h2>
-        {/* Implement jadwal makan component here */}
-      </div>
+      )}
     </div>
   );
+};
+
+// Helper function to calculate age in days
+function calculateAge(birthDateString) {
+  const birthDate = new Date(birthDateString);
+  const today = new Date();
+  const diffTime = Math.abs(today - birthDate);
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  return diffDays;
 }
+
+export default SapiDetail;

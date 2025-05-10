@@ -1,95 +1,133 @@
-import { createContext, useReducer } from 'react';
-import axios from 'axios';
+import { createContext, useState, useEffect } from 'react';
+import { jwtDecode } from 'jwt-decode';
+import api from '../services/api';
+import { useLocation } from 'react-router-dom';
 
-// buat context untuk share state auth ke seluruh aplikasi
-export const AuthContext = createContext();
+export const AuthContext = createContext(null);
 
-// state awal autentikasi
-const initialState = {
-    user: null,
-    token: localStorage.getItem('token'),
-    refreshToken: localStorage.getItem('refreshToken'),
-    isAuthenticated: !!localStorage.getItem('token'),
-    isLoading: false,
-    error: null
-};
+export const AuthProvider = ({ children }) => {
+  const [currentUser, setCurrentUser] = useState({});
+  const [accessToken, setAccessToken] = useState(localStorage.getItem('accessToken') || null);
+  const [refreshToken, setRefreshToken] = useState(localStorage.getItem('refreshToken') || null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [error, setError] = useState('');
 
-// reducer: cara react mengelola state yang kompleks
-function authReducer(state, action) {
-    switch (action.type) {
-        case 'LOGIN_REQUEST': // kalo user lagi proses login
-            return { ...state, isLoading:true, error: null };   
-        case 'LOGIN_SUCCESS': // kalo user berhasil login
-            return {
-                ...state,
-                isLoading: false,
-                isAuthenticated: true,
-                token: action.payload.token,
-                refreshToken: action.payload.refreshToken,
-                user: action.payload.user,
-                error: null
-            };
-        case 'LOGIN_FAILURE': // gagal login
-            return { ...state, isLoading: false, error: action.payload };
-        case 'LOGOUT': // ya logout
-            return { ...initialState, token: null, refreshToken: null, isAuthenticated:false };
-        default:
-            return state;
+  const location = useLocation();
+
+  const isTokenExpired = (token) => {
+    if (!token) return true;
+    try {
+      const decoded = jwtDecode(token);
+      const currentTime = Date.now() / 1000;
+      return decoded.exp < currentTime;
+    } catch {
+      return true;
     }
-}
+  };
 
-export function AuthProvider({ children }) {
-    // useReducer: hook untuk state management kompleks
-    // state: data state saat ini
-    // dispatch: fungsi untuk update state
-    const [state, dispatch] = useReducer(authReducer, initialState);
-    
-    const BASE_URL = import.meta.env.VITE_BASE_URL
+  const setAuthTokens = (accessToken, refreshToken) => {
+    localStorage.setItem('accessToken', accessToken);
+    localStorage.setItem('refreshToken', refreshToken);
+    setAccessToken(accessToken);
+    setRefreshToken(refreshToken);
+  };
 
-    // fungsi login: mengirim email dan password ke api login
-    const login = async (email, password) => {
-        // 1. update state menggunakan dispatch untuk nanti ditangkep
-        // sama si authreducer buat ngeubah statenya nanti
-        dispatch({ type: 'LOGIN_REQUEST' });
+  const clearAuthTokens = () => {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    setAccessToken(null);
+    setRefreshToken(null);
+    setCurrentUser(null);
+  };
 
-        try {
-            // 2. kirim request ke endpoint login
-            const response = await axios.post(`${BASE_URL}/login`, { email, password });
+  const login = async (email, password) => {
+    setIsLoading(true);
+    setError('');
+    try {
+      const response = await api.post('/login', { email, password });
+      if (response.data.status === 'success') {
+        const { accessToken, refreshToken, user } = response.data.data;
+        setAuthTokens(accessToken, refreshToken);
+        setCurrentUser(user);
+        return true;
+      }
+      return false;
+    } catch (err) {
+      setError(err.response?.data?.message || 'Login failed');
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-            // 3. Ambil token dari response
-            const { token, refreshToken } = response.data;
+  const logout = () => {
+    clearAuthTokens();
+  };
 
-            // 4. simpen token di local storage agar gak ilang kalo refresh webnya
-            localStorage.setItem('token', token);
-            localStorage.setItem('refreshToken', refreshToken);
+  const refreshAccessToken = async () => {
+    if (!refreshToken) return false;
+    try {
+      const response = await api.post('/refresh', { refreshToken });
+      if (response.data.status === 'success') {
+        const { accessToken: newAccessToken } = response.data.data;
+        setAuthTokens(newAccessToken, refreshToken);
+        return true;
+      }
+      return false;
+    } catch {
+      clearAuthTokens();
+      return false;
+    }
+  };
 
-            // 5. update state auth menjadi LOGIN_SUCCESS biar nanti
-            // masuk ke reducer terus state nya berubah.
-            dispatch({
-                type: 'LOGIN_SUCCESS',
-                payload: { token, refreshToken, user: { email }}
-            });
+  useEffect(() => {
+    const checkAuth = async () => {
+      setIsCheckingAuth(true);
+      if (!accessToken || !refreshToken) {
+        clearAuthTokens();
+        setIsCheckingAuth(false);
+        return;
+      }
+      if (isTokenExpired(accessToken)) {
+        const success = await refreshAccessToken();
+        if (!success) {
+          clearAuthTokens();
+        } else {
+          try {
+            const decoded = jwtDecode(localStorage.getItem('accessToken'));
+            setCurrentUser({ id: decoded.id, email: decoded.email, name: decoded.name });
 
-            return true;
-        } catch (err) {
-            // 6. kalo error/gagal, dispatchnya pake yang tipe failure
-            dispatch({
-                type: 'LOGIN_FAILURE',
-                payload: err.response?.data?.message || 'Login Gagal'
-            }) 
-            return false;
+          } catch {
+            clearAuthTokens();
+          }
         }
-    }
+      } else {
+        try {
+          const decoded = jwtDecode(accessToken);
+          setCurrentUser({ id: decoded.id, email: decoded.email, name: decoded.name });
+        } catch {
+          clearAuthTokens();
+        }
+      }
+      setIsCheckingAuth(false);
+    };
+    checkAuth();
+    // eslint-disable-next-line
+  }, [location.pathname]);
 
-    const logout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('refreshToken');
-        dispatch({ type: 'LOGOUT' });
-    }
+  const value = {
+    currentUser,
+    accessToken,
+    refreshToken,
+    isLoading,
+    error,
+    isAuthenticated: !!currentUser,
+    isCheckingAuth,
+    login,
+    logout,
+    refreshAccessToken,
+  };
 
-    return (
-        <AuthContext.Provider value={{ ...state, login, logout }}>
-            {children}
-        </AuthContext.Provider>
-    )
-}
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};

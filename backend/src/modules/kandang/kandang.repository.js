@@ -2,13 +2,25 @@ const prisma = require('../../db');
 
 class KandangRepository {
   async findAll() {
-    return prisma.kandang.findMany({ include: { sapi: true } });
+    return prisma.kandang.findMany({
+      include: { 
+        sapi: true,
+        _count: {
+          select: { sapi: true },
+        }
+       }, 
+    });
   }
 
   async findById(id) {
     return prisma.kandang.findUnique({
       where: { id: Number(id) },
-      include: { sapi: true },
+      include: { 
+        sapi: true,
+        _count: {
+          select: { sapi: true },
+        }
+       },
     });
   }
 

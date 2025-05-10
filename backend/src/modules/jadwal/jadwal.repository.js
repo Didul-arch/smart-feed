@@ -1,32 +1,33 @@
-// jadwal.repository.js
-const prisma = require('../../db/');
+const prisma = require("../../db/");
 
 class JadwalRepository {
-  async findAll() {
-    return prisma.jadwalMakan.findMany({
-      include: { sapi: true, pakan: true, user: true }
+  async findAllSapi(kandangId) {
+    return prisma.sapi.findMany({
+      where: kandangId ? { kandangId } : {},
+      include: { kandang: true },
     });
   }
-  
-  async create(data) {
-    return prisma.jadwalMakan.create({ data })
-  } 
 
-  async update (id, data) {
-    return prisma.jadwalMakan.update({
-      where: { id: Number(id) },
-      data
-    })
+  async findSapiById(sapiId) {
+    return prisma.sapi.findUnique({
+      where: { id: sapiId },
+      include: { kandang: true },
+    });
   }
 
-  async delete(id){
-    return prisma.jadwalMakan.delete({
+  async getJadwalMakan(sapiId, start, end, waktu) {
+    return prisma.jadwalMakan.findFirst({
       where: {
-        id: Number(id)
-      }
+        sapiId,
+        tanggal: { gte: start, lte: end },
+        waktu,
+      },
+      include: {
+        user: true,
+        pakan: true,
+      },
     });
   }
-  // ...findById, create, update, delete mirip module lain
 }
-module.exports = new JadwalRepository();
 
+module.exports = new JadwalRepository();
