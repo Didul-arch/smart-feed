@@ -43,6 +43,27 @@ function v1() {
   router.delete('/pakan/:id', handler.pakanHandler.delete);
   router.patch('/pakan/:id', handler.pakanHandler.update);
 
+  // Kandang Routes
+  router.post('/kandang', handler.kandangHandler.create);
+  router.get('/kandang', handler.kandangHandler.getAll);
+  router.get('/kandang/:id', handler.kandangHandler.getById);
+  router.delete('/kandang/:id', handler.kandangHandler.delete);
+  router.patch('/kandang/:id', handler.kandangHandler.update);
+  
+  // JadwalRoutes
+  router.post('/jadwal', handler.jadwalHandler.create);
+  router.get('/jadwal', handler.jadwalHandler.getAll);
+
+  // Status routes harus sebelum /jadwal/:id
+  router.get('/jadwal/status', handler.jadwalHandler.getStatusAllSapi);
+  router.get('/jadwal/status/:sapiId', handler.jadwalHandler.getStatusBySapiId);
+
+  router.get('/jadwal/:id', handler.jadwalHandler.getById);
+  router.delete('/jadwal/:id', handler.jadwalHandler.delete);
+  router.patch('/jadwal/:id', handler.jadwalHandler.update);
+
+// ...existing code...
+
   return router;
 }
 

@@ -6,7 +6,7 @@ import { useLocation } from 'react-router-dom';
 export const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState(null);
+  const [currentUser, setCurrentUser] = useState({});
   const [accessToken, setAccessToken] = useState(localStorage.getItem('accessToken') || null);
   const [refreshToken, setRefreshToken] = useState(localStorage.getItem('refreshToken') || null);
   const [isLoading, setIsLoading] = useState(false);
@@ -96,7 +96,8 @@ export const AuthProvider = ({ children }) => {
         } else {
           try {
             const decoded = jwtDecode(localStorage.getItem('accessToken'));
-            setCurrentUser({ id: decoded.id, email: decoded.email });
+            setCurrentUser({ id: decoded.id, email: decoded.email, name: decoded.name });
+
           } catch {
             clearAuthTokens();
           }
@@ -104,7 +105,7 @@ export const AuthProvider = ({ children }) => {
       } else {
         try {
           const decoded = jwtDecode(accessToken);
-          setCurrentUser({ id: decoded.id, email: decoded.email });
+          setCurrentUser({ id: decoded.id, email: decoded.email, name: decoded.name });
         } catch {
           clearAuthTokens();
         }

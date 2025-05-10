@@ -1,12 +1,12 @@
-import React from "react"
-import { Link, useLocation } from "react-router-dom"
-import { useAuth } from "@/hooks/useAuth"
-import images from "@/utils/images"
-import { LogOut, X } from "lucide-react" // Tambahkan import X
+import React from "react";
+import { Link, useLocation } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import images from "@/utils/images";
+import { LogOut, X, ChevronUp } from "lucide-react";
 
 import {
   Sidebar,
-  SidebarContent, 
+  SidebarContent,
   SidebarHeader,
   SidebarFooter,
   SidebarGroup,
@@ -15,71 +15,62 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
-  useSidebar
-} from "@/components/ui/sidebar"
+  useSidebar,
+} from "@/components/ui/sidebar";
+
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 
 export function AppSidebar() {
-  const location = useLocation()
-  const { logout } = useAuth()
-  const { state, toggleSidebar } = useSidebar() // Tambahkan toggleSidebar
+  const location = useLocation();
+  const { logout, currentUser } = useAuth();
+  console.log(currentUser)
+  const {
+    state,
+    open,
+    setOpen,
+    openMobile,
+    setOpenMobile,
+    isMobile,
+    toggleSidebar,
+  } = useSidebar()
 
-  const isCollapsed = state === "collapsed"
-  
   // Menu navigasi
   const menuItems = [
-    { text: "Home", path: "/", icon: images.LOGO.HOME },
-    { text: "Jadwal", path: "/jadwal", icon: images.LOGO.JADWAL },
-    { text: "Sapi", path: "/sapi", icon: images.LOGO.SAPI },
-    { text: "Pakan", path: "/pakan", icon: images.LOGO.PAKAN },
-    { text: "Settings", path: "/settings", icon: images.LOGO.SETTING },
-  ]
+    { title: "Home", path: "/", icon: images.LOGO.HOME },
+    { title: "Jadwal", path: "/jadwal", icon: images.LOGO.JADWAL },
+    { title: "Sapi", path: "/sapi", icon: images.LOGO.SAPI },
+    { title: "Pakan", path: "/pakan", icon: images.LOGO.PAKAN },
+    { title: "Settings", path: "/settings", icon: images.LOGO.SETTING },
+  ];
 
   // Cek apakah route aktif
   const isActive = (path) => {
-    if (path === "/") return location.pathname === path
-    return location.pathname.startsWith(path)
-  }
+    if (path === "/") return location.pathname === path;
+    return location.pathname.startsWith(path);
+  };
 
   return (
-    <Sidebar>
-<SidebarHeader className={`border-b px-4 py-4 ${
-  isCollapsed ? "flex justify-center" : "flex justify-between items-center"
-}`}>
-  {!isCollapsed ? (
-    <div className="flex w-full justify-between items-center">
-      <Link to="/" className="flex items-center">
-        <span className="font-bold text-xl">Smart Feed</span>
-      </Link>
-      {/* Tombol X untuk menutup sidebar */}
-      <button
-        onClick={toggleSidebar}
-        className="text-muted-foreground hover:text-foreground rounded-full p-1 hover:bg-secondary"
-      >
-        <X size={18} />
-      </button>
-    </div>
-  ) : (
-    <Link to="/" className="flex items-center justify-center">
-      <img src={images.LOGO.HOME} alt="Logo" className="w-6 h-6" />
-    </Link>
-  )}
-</SidebarHeader>
-      
+    <Sidebar variant="floating">
       <SidebarContent>
         <SidebarGroup>
-          {!isCollapsed && <SidebarGroupLabel>Menu</SidebarGroupLabel>}
+          <SidebarHeader className="border-b-1 border-slate-300 mb-6 p-4 flex justify-between flex-row items-baseline">
+            <h1 className="font-bold text-2xl">SmartFeed</h1>
+            <X size={20} className="md:hidden" onClick={toggleSidebar}/>
+          </SidebarHeader>
+          <SidebarGroupLabel>Menu</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {menuItems.map((item) => (
-                <SidebarMenuItem key={item.text}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={isActive(item.path)} 
-                    tooltip={isCollapsed ? item.text : undefined}
-                  >
-                    <Link to={item.path} className="flex items-center gap-2">
-                      <img src={item.icon} alt={item.text} className="w-5 h-5" />
-                      {!isCollapsed && <span>{item.text}</span>}
+                <SidebarMenuItem key={item.title} onClick={toggleSidebar}>
+                  <SidebarMenuButton asChild>
+                    <Link to={item.path}>
+                      <img src={item.icon} className="max-h-full"/>
+                      <h3 className="text-[18px] ml-2">{item.title}</h3>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -88,20 +79,37 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      
-      <SidebarFooter className="border-t p-4">
-        <button
-          onClick={logout}
-          className={`flex items-center text-destructive w-full px-2 py-2 hover:bg-secondary rounded-md ${
-            isCollapsed ? "justify-center" : "gap-2"
-          }`}
-        >
-          <LogOut size={18} />
-          {!isCollapsed && <span>Logout</span>}
-        </button>
-      </SidebarFooter>
+      <SidebarFooter>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <SidebarMenuButton>
+                    <h2 className="font-semibold">{currentUser.name}</h2>
+                    
+                    <ChevronUp className="ml-auto" />
+                  </SidebarMenuButton>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  side="top"
+                  className="w-[--radix-popper-anchor-width]"
+                >
+                  <DropdownMenuItem>
+                    <span>Account</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <span>Billing</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <span>Sign out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarFooter>
     </Sidebar>
-  )
+  );
 }
 
-export default AppSidebar
+export default AppSidebar;

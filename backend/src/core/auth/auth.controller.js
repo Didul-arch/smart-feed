@@ -27,7 +27,7 @@ class authController {
       if (!valid) throw new AppError('Password salah', 401);
 
       // Generate tokens
-      const accessToken = generateToken({ id: user.id, email: user.email });
+      const accessToken = generateToken({ id: user.id, email: user.email, name: user.nama });
       const refreshToken = generateRefreshToken({ id: user.id });
 
       // Return response
@@ -37,7 +37,7 @@ class authController {
           user: {
             id: user.id,
             email: user.email,
-            name: user.name
+            name: user.nama
           },
           accessToken,
           refreshToken

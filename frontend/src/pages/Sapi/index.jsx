@@ -23,7 +23,7 @@ const Sapi = () => {
   if (error) return <div className="p-4 text-red-500">Error: {error}</div>;
 
   return (
-    <div className="p-4">
+    <div className="w-full">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Daftar Kandang</h1>
         <Button size="sm" variant="outline">

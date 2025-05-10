@@ -67,15 +67,3 @@ model JadwalMakan{
     user User @relation(fields: [userId], references: [id])
     userId Int 
 }
-
-// PETERNAK / USER
-// id, email, nama
-
-// SAPI
-// id, jenis, bobot, image, jenisKelamin, tanggalLahir
-
-// PAKAN
-// id, jenis, stok, harga(perkilo), komposisi
-
-// jadwalMakan
-// id, sapiId, pakanId, peternakId, datetime
