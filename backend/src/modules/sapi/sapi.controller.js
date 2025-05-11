@@ -19,7 +19,7 @@ class SapiController {
   create = catchAsync(async (req, res) => {
     const parse = createSapiSchema.safeParse(req.body);
     if (!parse.success) throw new AppError(parse.error.errors[0]?.message || "Invalid input", 400);
-    const data = await sapiService.create(parse.data);
+    const data = await sapiService.create(parse.data); 
     res.status(201).json(data);
   });
 

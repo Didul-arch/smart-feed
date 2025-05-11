@@ -21,4 +21,4 @@ const updateSapiSchema = z.object({
 module.exports = {
   createSapiSchema,
   updateSapiSchema,
-};
+}; 

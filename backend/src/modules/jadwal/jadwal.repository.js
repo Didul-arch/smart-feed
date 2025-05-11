@@ -1,31 +1,41 @@
-const prisma = require("../../db/");
+const prisma = require('../../db');
 
 class JadwalRepository {
-  async findAllSapi(kandangId) {
-    return prisma.sapi.findMany({
-      where: kandangId ? { kandangId } : {},
-      include: { kandang: true },
-    });
-  }
-
-  async findSapiById(sapiId) {
-    return prisma.sapi.findUnique({
-      where: { id: sapiId },
-      include: { kandang: true },
-    });
-  }
-
-  async getJadwalMakan(sapiId, start, end, waktu) {
-    return prisma.jadwalMakan.findFirst({
-      where: {
-        sapiId,
-        tanggal: { gte: start, lte: end },
-        waktu,
-      },
+  async findAll() {
+    return prisma.jadwalMakan.findMany({
       include: {
-        user: true,
+        sapi: true,
         pakan: true,
+        user: true,
       },
+    });
+  }
+
+  async findById(id) {
+    return prisma.jadwalMakan.findUnique({
+      where: { id: Number(id) },
+      include: {
+        sapi: true,
+        pakan: true,
+        user: true,
+      },
+    });
+  }
+
+  async create(data) {
+    return prisma.jadwalMakan.create({ data });
+  }
+
+  async update(id, data) {
+    return prisma.jadwalMakan.update({
+      where: { id: Number(id) },
+      data,
+    });
+  }
+
+  async delete(id) {
+    return prisma.jadwalMakan.delete({
+      where: { id: Number(id) },
     });
   }
 }

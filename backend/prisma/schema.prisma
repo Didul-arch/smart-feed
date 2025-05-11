@@ -48,22 +48,33 @@ model Sapi {
 
 model Pakan{
   id       Int  @id @default(autoincrement())
+  nama String
   jenis String
   banyakStok Float
   harga Float? 
   image String
-  // relation
+  // relation 
   jadwal JadwalMakan[]
 }
 
-model JadwalMakan{
-    id Int @id @default(autoincrement())
-    tanggal DateTime
-    waktu String
-    sapi Sapi @relation(fields: [sapiId], references: [id])
-    sapiId Int
-    pakan Pakan @relation(fields: [pakanId], references: [id])
-    pakanId Int
-    user User @relation(fields: [userId], references: [id])
-    userId Int 
+model JadwalMakan {
+  id       Int      @id @default(autoincrement())
+  tanggal  DateTime
+  waktu    String
+  sapi     Sapi     @relation(fields: [sapiId], references: [id])
+  sapiId   Int
+  pakan    Pakan    @relation(fields: [pakanId], references: [id])
+  pakanId  Int
+  user     User     @relation(fields: [userId], references: [id])
+  userId   Int 
+  records   Record[]
+}
+
+model Record {
+  id        Int      @id @default(autoincrement())
+  jadwalId  Int
+  userId    Int
+  waktu     DateTime
+  jadwal    JadwalMakan @relation(fields: [jadwalId], references: [id])
+  user      User @relation(fields: [userId], references: [id])
 }

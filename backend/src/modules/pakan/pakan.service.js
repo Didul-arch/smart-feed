@@ -22,4 +22,4 @@ class PakanService {
   }
 }
 
-module.exports = new PakanService();
+module.exports = new PakanService(); 

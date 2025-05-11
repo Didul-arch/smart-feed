@@ -26,7 +26,7 @@ class PakanRepository {
   async delete(id) {
     return prisma.pakan.delete({
       where: { id: Number(id) },
-    });
+    }); 
   }
 }
 

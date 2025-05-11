@@ -17,4 +17,4 @@ const updatePakanSchema = z.object({
 module.exports = {
   createPakanSchema,
   updatePakanSchema,
-};
+}; 
