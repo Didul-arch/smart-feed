@@ -23,7 +23,7 @@ const authMiddleware = catchAsync(async (req, res, next) => {
 
     // Add user to request object
     req.user = decoded;
-
+ 
     next();
   } catch (err) {
     return res.status(401).json({

@@ -30,12 +30,6 @@ export function AppSidebar() {
   const { logout, currentUser } = useAuth();
   console.log(currentUser)
   const {
-    state,
-    open,
-    setOpen,
-    openMobile,
-    setOpenMobile,
-    isMobile,
     toggleSidebar,
   } = useSidebar()
 
@@ -47,6 +41,8 @@ export function AppSidebar() {
     { title: "Pakan", path: "/pakan", icon: images.LOGO.PAKAN },
     { title: "Settings", path: "/settings", icon: images.LOGO.SETTING },
   ];
+  
+  console.log(currentUser)
 
   // Cek apakah route aktif
   const isActive = (path) => {
@@ -79,7 +75,7 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter>
+      <SidebarFooter className="border-t-1">
           <SidebarMenu>
             <SidebarMenuItem>
               <DropdownMenu>

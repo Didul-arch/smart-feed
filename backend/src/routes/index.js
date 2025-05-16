@@ -16,7 +16,7 @@ function createRoute(app) {
 function v1() {
   const router = express.Router();
 
-  // Auth
+  // Auth 
   router.post('/login', handler.authHandler.login);
   router.post('/refresh', handler.authHandler.refresh);
 
@@ -29,7 +29,7 @@ function v1() {
   router.delete('/sapi/:id', handler.sapiHandler.delete);
   router.patch('/sapi/:id', handler.sapiHandler.update);
 
-  // Sapi routes
+  // Kandang routes
   router.post('/kandang', handler.kandangHandler.create);
   router.get('/kandang', handler.kandangHandler.getAll);
   router.get('/kandang/:id', handler.kandangHandler.getById);
@@ -51,15 +51,24 @@ function v1() {
   router.patch('/kandang/:id', handler.kandangHandler.update);
 
   // Jadwal routes
-  router.post('/jadwal', jadwalController.create);
-  router.get('/jadwal', jadwalController.getAll);
-  router.get('/jadwal/:id', jadwalController.getById);
-  router.patch('/jadwal/:id', jadwalController.update);
-  router.delete('/jadwal/:id', jadwalController.delete);
-  
+  router.post('/jadwal', handler.jadwalHandler.create);
+  router.get('/jadwal', handler.jadwalHandler.getAll);
+  router.get('/jadwal/:id', handler.jadwalHandler.getById);
+  router.patch('/jadwal/:id', handler.jadwalHandler.update);
+  router.delete('/jadwal/:id', handler.jadwalHandler.delete);
+
+  // Dashboard untuk tampilan utama
+  router.get('/dashboard', handler.jadwalHandler.getDashboard);
+
+  // Summary routes
+  router.get('/jadwal-summary', handler.jadwalHandler.getSummaryByKandang);
+
+  // Record routes
+  router.post('/record', handler.recordHandler.create);
+  router.get('/record', handler.recordHandler.getAll); // histori/filter
+
 
   return router;
 }
 
 module.exports = createRoute;
- 

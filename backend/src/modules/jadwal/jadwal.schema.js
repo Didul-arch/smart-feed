@@ -3,42 +3,13 @@ const { z } = require('zod');
 const createJadwalSchema = z.object({
   hari: z.string().min(1),
   sapiId: z.number().int().positive(),
-  pakanId: z.number().int().positive(),
-  pagi: z.object({
-    jam: z.string().regex(/^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/), // HH:mm format
-    records: z.array(z.object({
-      userId: z.number().int().positive(),
-      waktu: z.string().regex(/^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/), // HH:mm format
-    })).optional(),
-  }),
-  sore: z.object({
-    jam: z.string().regex(/^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/), // HH:mm format
-    records: z.array(z.object({
-      userId: z.number().int().positive(),
-      waktu: z.string().regex(/^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/), // HH:mm format
-    })).optional(),
-  }),
+  pagiJam: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/), // HH:mm
+  soreJam: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/), // HH:mm
+  pagiPakanId: z.number().int().positive(),
+  sorePakanId: z.number().int().positive(),
 });
 
-const updateJadwalSchema = z.object({
-  hari: z.string().min(1).optional(),
-  sapiId: z.number().int().positive().optional(),
-  pakanId: z.number().int().positive().optional(),
-  pagi: z.object({
-    jam: z.string().regex(/^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/).optional(),
-    records: z.array(z.object({
-      userId: z.number().int().positive(),
-      waktu: z.string().regex(/^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/),
-    })).optional(),
-  }).optional(),
-  sore: z.object({
-    jam: z.string().regex(/^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/).optional(),
-    records: z.array(z.object({
-      userId: z.number().int().positive(),
-      waktu: z.string().regex(/^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/),
-    })).optional(),
-  }).optional(),
-});
+const updateJadwalSchema = createJadwalSchema.partial();
 
 module.exports = {
   createJadwalSchema,

@@ -51,6 +51,7 @@ class authController {
     }
   };
 
+  // ...existing code...
   refresh = catchAsync(async (req, res) => {
     const { refreshToken } = req.body;
 
@@ -64,14 +65,32 @@ class authController {
     // Verify refresh token
     const payload = verifyRefreshToken(refreshToken);
 
+    // Ambil data user dari database
+    const user = await prisma.user.findUnique({
+      where: { id: payload.id }
+    });
+    if (!user) {
+      return res.status(404).json({
+        status: 'fail',
+        message: 'User not found'
+      });
+    }
+
     // Generate new access token
     const newToken = generateToken({
-      id: payload.id
+      id: user.id,
+      email: user.email,
+      name: user.nama
     });
 
     return res.status(200).json({
       status: 'success',
       data: {
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.nama
+        },
         accessToken: newToken
       }
     });

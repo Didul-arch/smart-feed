@@ -5,38 +5,60 @@ const AppError = require('../../core/helper/appError');
 
 class JadwalController {
   getAll = catchAsync(async (req, res) => {
-    const data = await jadwalService.getAll();
+    const filters = {
+      hari: req.query.hari,
+      sapiId: req.query.sapiId,
+      kandangId: req.query.kandangId
+    };
+
+    const data = await jadwalService.getAll(filters);
     res.json(data);
   });
 
   getById = catchAsync(async (req, res) => {
     const { id } = req.params;
     const data = await jadwalService.getById(id);
-    if (!data) throw new AppError("Jadwal not found", 404);
     res.json(data);
   });
 
   create = catchAsync(async (req, res) => {
-    const parse = createJadwalSchema.safeParse(req.body);
-    if (!parse.success) throw new AppError(parse.error.errors[0]?.message || "Invalid input", 400);
-    const data = await jadwalService.create(parse.data);
+    const result = createJadwalSchema.safeParse(req.body);
+    if (!result.success) {
+      throw new AppError(result.error.errors[0]?.message || 'Invalid input', 400);
+    }
+
+    const data = await jadwalService.create(result.data);
     res.status(201).json(data);
   });
 
   update = catchAsync(async (req, res) => {
     const { id } = req.params;
-    const parse = updateJadwalSchema.safeParse(req.body);
-    if (!parse.success) throw new AppError(parse.error.errors[0]?.message || "Invalid input", 400);
-    const data = await jadwalService.update(id, parse.data);
-    if (!data) throw new AppError("Jadwal not found", 404);
+
+    const result = updateJadwalSchema.safeParse(req.body);
+    if (!result.success) {
+      throw new AppError(result.error.errors[0]?.message || 'Invalid input', 400);
+    }
+
+    const data = await jadwalService.update(id, result.data);
     res.json(data);
   });
 
   delete = catchAsync(async (req, res) => {
     const { id } = req.params;
-    const deleted = await jadwalService.delete(id);
-    if (!deleted) throw new AppError("Jadwal not found", 404);
+    await jadwalService.delete(id);
     res.status(204).send();
+  });
+
+  getDashboard = catchAsync(async (req, res) => {
+    const { date } = req.query;
+    const data = await jadwalService.getDashboardData(date);
+    res.json(data);
+  });
+
+  getSummaryByKandang = catchAsync(async (req, res) => {
+    const { date } = req.query;
+    const data = await jadwalService.getSummaryByKandang(date);
+    res.json(data);
   });
 }
 
