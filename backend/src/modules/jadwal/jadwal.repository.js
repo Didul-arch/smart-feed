@@ -1,158 +1,68 @@
-const prisma = require('../../db');
+const prisma = require('../../db'); // Pastikan path ke instance Prisma Client benar
 
 class JadwalRepository {
-  // Ambil semua jadwal
-  async findAll(filters = {}) {
-    const { hari, sapiId, kandangId } = filters;
-    const where = {};
-
-    if (hari) where.hari = hari;
-    if (sapiId) where.sapiId = Number(sapiId);
-
-    // Filter by kandangId (butuh join)
-    if (kandangId) {
-      return prisma.jadwalMakan.findMany({
-        where: {
-          ...where,
-          sapi: {
-            kandangId: Number(kandangId)
-          }
-        },
-        include: {
-          sapi: true,
-          pagiPakan: true,
-          sorePakan: true,
-          records: true
-        }
-      });
-    }
-
-    return prisma.jadwalMakan.findMany({
-      where,
-      include: {
-        sapi: true,
-        pagiPakan: true,
-        sorePakan: true,
-        records: true
-      }
+  async createOrUpdate(data) {
+    // data harus mengandung sapiId dan hari
+    return prisma.jadwalHarian.upsert({
+      where: { sapiId_hari: { sapiId: data.sapiId, hari: data.hari } },
+      update: {
+        pagiPakanId: data.pagiPakanId,
+        pagiWaktu: data.pagiWaktu,
+        sorePakanId: data.sorePakanId,
+        soreWaktu: data.soreWaktu,
+      },
+      create: data,
+      include: { pagiPakan: true, sorePakan: true, sapi: true },
     });
   }
 
-  async findById(id) {
-    return prisma.jadwalMakan.findUnique({
-      where: { id: Number(id) },
-      include: {
-        sapi: true,
-        pagiPakan: true,
-        sorePakan: true,
-        records: true
-      }
+  async findBySapiId(sapiId) {
+    return prisma.jadwalHarian.findMany({
+      where: { sapiId },
+      include: { pagiPakan: true, sorePakan: true },
+      orderBy: {
+        // Untuk urutan hari yang benar (Senin, Selasa, ...),
+        // Anda mungkin perlu menambahkan field 'urutanHari' (1-7) di model JadwalHarian
+        // atau melakukan sorting di sisi aplikasi setelah data diambil.
+        // Saat ini, akan diurutkan berdasarkan nama Enum Hari secara alfabetis.
+        hari: 'asc',
+      },
     });
   }
 
-  async create(data) {
-    return prisma.jadwalMakan.create({
-      data,
-      include: {
-        sapi: true,
-        pagiPakan: true,
-        sorePakan: true
-      }
+  async findBySapiIdAndHari(sapiId, hari) {
+    return prisma.jadwalHarian.findUnique({
+      where: { sapiId_hari: { sapiId, hari } },
+      include: { pagiPakan: true, sorePakan: true },
     });
   }
 
-  async update(id, data) {
-    return prisma.jadwalMakan.update({
-      where: { id: Number(id) },
-      data,
-      include: {
-        sapi: true,
-        pagiPakan: true,
-        sorePakan: true
-      }
-    });
-  }
-
-  async delete(id) {
-    return prisma.jadwalMakan.delete({
-      where: { id: Number(id) }
-    });
-  }
-
-  // Data untuk halaman utama
-  async getDashboardData(date) {
-    // Convert date ke nama hari
-    const days = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
-    const dayIndex = new Date(date).getDay();
-    const hari = days[dayIndex];
-
-    // Ambil semua kandang dengan sapi dan jadwalnya untuk hari ini
-    const kandangs = await prisma.kandang.findMany({
-      include: {
+  // Metode ini tidak lagi relevan karena jadwal sekarang per sapi,
+  // tapi kita butuh cara untuk mendapatkan semua jadwal sapi dalam satu kandang pada hari tertentu
+  // untuk fungsi getJadwalDisplayForKandang.
+  // Ini bisa dilakukan dengan query yang lebih kompleks di service atau
+  // dengan mengambil semua sapi di kandang lalu query jadwal masing-masing.
+  // Untuk efisiensi, kita bisa query JadwalHarian yang sapinya ada di kandangId tertentu.
+  async findAllJadwalInKandangForHari(kandangId, hari) {
+    return prisma.jadwalHarian.findMany({
+      where: {
         sapi: {
-          include: {
-            jadwal: {
-              where: { hari },
-              include: {
-                pagiPakan: true,
-                sorePakan: true,
-                records: {
-                  where: {
-                    waktu: {
-                      gte: new Date(date + 'T00:00:00.000Z'),
-                      lt: new Date(date + 'T23:59:59.999Z'),
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
+          kandangId: kandangId,
+        },
+        hari: hari,
+      },
+      include: {
+        pagiPakan: true,
+        sorePakan: true,
+        sapi: { select: { id: true, jenis: true } }, // Hanya info sapi yang relevan
+      },
     });
+  }
 
-    // Ubah format data untuk frontend
-    return kandangs.map(kandang => {
-      // Hitung sapi yang sudah diberi makan
-      const sapiDenganJadwal = kandang.sapi.filter(s => s.jadwal.length > 0);
-      const totalSapi = sapiDenganJadwal.length;
-
-      let sudahMakanPagi = 0;
-      let sudahMakanSore = 0;
-
-      const sapiData = sapiDenganJadwal.map(sapi => {
-        const jadwal = sapi.jadwal[0]; // Harusnya cuma ada 1 jadwal per sapi per hari
-
-        // Cek status makan
-        const makanPagi = jadwal.records.some(r => r.sesi === 'pagi');
-        const makanSore = jadwal.records.some(r => r.sesi === 'sore');
-
-        if (makanPagi) sudahMakanPagi++;
-        if (makanSore) sudahMakanSore++;
-
-        return {
-          sapiId: sapi.id,
-          sapiJenis: sapi.jenis,
-          jadwalId: jadwal.id,
-          sudahMakanPagi: makanPagi,
-          sudahMakanSore: makanSore,
-          pagiJam: jadwal.pagiJam,
-          soreJam: jadwal.soreJam,
-          pagiPakan: jadwal.pagiPakan,
-          sorePakan: jadwal.sorePakan
-        };
-      });
-
-      return {
-        kandangId: kandang.id,
-        kandangNama: kandang.nama,
-        totalSapi: totalSapi,
-        sudahMakanPagi: sudahMakanPagi,
-        sudahMakanSore: sudahMakanSore,
-        sapi: sapiData
-      };
-    }).filter(k => k.totalSapi > 0); // Hilangkan kandang kosong
+  async deleteBySapiIdAndHari(sapiId, hari) {
+    return prisma.jadwalHarian.delete({
+      where: { sapiId_hari: { sapiId, hari } },
+    });
   }
 }
-
 module.exports = new JadwalRepository();

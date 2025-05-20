@@ -1,234 +1,174 @@
-const { PrismaClient } = require("../generated/prisma");
+const { PrismaClient, Hari, SesiPemberianMakan } = require("../generated/prisma"); // Pastikan path ke client benar
 const prisma = new PrismaClient();
 const bcrypt = require("bcryptjs");
 
 async function main() {
-  // Hapus semua data
-  await prisma.record.deleteMany();
-  await prisma.jadwalMakan.deleteMany();
+  console.log("Start seeding ...");
+
+  // Hapus semua data dengan urutan yang benar untuk menghindari konflik foreign key
+  await prisma.recordPemberianMakan.deleteMany();
+  await prisma.jadwalHarian.deleteMany();
   await prisma.sapi.deleteMany();
   await prisma.pakan.deleteMany();
   await prisma.kandang.deleteMany();
   await prisma.user.deleteMany();
+  console.log("Old data deleted.");
 
-  // Reset auto increment (PostgreSQL)
-  await prisma.$executeRawUnsafe('ALTER SEQUENCE "User_id_seq" RESTART WITH 1');
-  await prisma.$executeRawUnsafe('ALTER SEQUENCE "Kandang_id_seq" RESTART WITH 1');
-  await prisma.$executeRawUnsafe('ALTER SEQUENCE "Sapi_id_seq" RESTART WITH 1');
-  await prisma.$executeRawUnsafe('ALTER SEQUENCE "Pakan_id_seq" RESTART WITH 1');
-  await prisma.$executeRawUnsafe('ALTER SEQUENCE "JadwalMakan_id_seq" RESTART WITH 1');
-  await prisma.$executeRawUnsafe('ALTER SEQUENCE "Record_id_seq" RESTART WITH 1');
+  // Reset auto increment untuk tabel dengan ID integer (PostgreSQL)
+  await prisma.$executeRawUnsafe('ALTER SEQUENCE "User_id_seq" RESTART WITH 1;');
+  await prisma.$executeRawUnsafe('ALTER SEQUENCE "Kandang_id_seq" RESTART WITH 1;');
+  await prisma.$executeRawUnsafe('ALTER SEQUENCE "Sapi_id_seq" RESTART WITH 1;');
+  await prisma.$executeRawUnsafe('ALTER SEQUENCE "Pakan_id_seq" RESTART WITH 1;');
+  console.log("Sequences reset.");
 
   // User dummy
   const passwordHash = await bcrypt.hash("password123", 10);
   const user1 = await prisma.user.create({
     data: {
-      email: "user@mail.com",
+      email: "peternak.utama@example.com",
       password: passwordHash,
-      nama: "Peternak Satu",
+      nama: "Peternak Utama",
     },
   });
-  const user2 = await prisma.user.create({
-    data: {
-      email: "peternak2@mail.com",
-      password: passwordHash,
-      nama: "Peternak Dua",
-    },
-  });
+  console.log(`Created user with id: ${user1.id}`);
 
   // Kandang dummy
   const kandangA = await prisma.kandang.create({
     data: {
-      nama: "Kandang A",
-      lokasi: "Blok Timur",
-      kapasitas: 10,
+      nama: "Kandang Alpha",
+      lokasi: "Area Utara",
+      kapasitas: 15,
     },
   });
   const kandangB = await prisma.kandang.create({
     data: {
-      nama: "Kandang B",
-      lokasi: "Blok Barat",
-      kapasitas: 8,
+      nama: "Kandang Beta",
+      lokasi: "Area Selatan",
+      kapasitas: 10,
     },
   });
-
-  // Sapi dummy
-  const sapi1 = await prisma.sapi.create({
-    data: {
-      jenis: "Sapi Bali",
-      bobot: 350,
-      image: "sapi1.jpg",
-      kandangId: kandangA.id,
-      tanggalLahir: new Date("2022-01-01"),
-    },
-  });
-  const sapi2 = await prisma.sapi.create({
-    data: {
-      jenis: "Sapi Limousin",
-      bobot: 420,
-      image: "sapi2.jpg",
-      kandangId: kandangA.id,
-      tanggalLahir: new Date("2021-06-15"),
-    },
-  });
-  const sapi3 = await prisma.sapi.create({
-    data: {
-      jenis: "Sapi Madura",
-      bobot: 300,
-      image: "sapi3.jpg",
-      kandangId: kandangB.id,
-      tanggalLahir: new Date("2023-03-10"),
-    },
-  });
-  const sapi4 = await prisma.sapi.create({
-    data: {
-      jenis: "Sapi Ongole",
-      bobot: 390,
-      image: "sapi4.jpg",
-      kandangId: kandangB.id,
-      tanggalLahir: new Date("2022-08-20"),
-    },
-  });
+  console.log(`Created kandang: ${kandangA.nama}, ${kandangB.nama}`);
 
   // Pakan dummy
-  const pakan1 = await prisma.pakan.create({
+  const pakanRumput = await prisma.pakan.create({
     data: {
-      nama: "Rumput Gajah",
+      nama: "Rumput Segar",
       jenis: "Hijauan",
-      banyakStok: 100,
-      harga: 5000,
-      image: "pakan1.jpg",
+      banyakStok: 200,
+      harga: 2000,
+      image: "rumput.jpg",
     },
   });
-  const pakan2 = await prisma.pakan.create({
+  const pakanKonsentrat = await prisma.pakan.create({
     data: {
-      nama: "Jerami",
-      jenis: "Hijauan",
-      banyakStok: 50,
-      harga: 3000,
-      image: "pakan2.jpg",
-    },
-  });
-  const pakan3 = await prisma.pakan.create({
-    data: {
-      nama: "Konsentrat",
+      nama: "Konsentrat Super",
       jenis: "Konsentrat",
-      banyakStok: 30,
-      harga: 8000,
-      image: "pakan3.jpg",
+      banyakStok: 100,
+      harga: 7500,
+      image: "konsentrat.jpg",
     },
   });
+  const pakanJerami = await prisma.pakan.create({
+    data: {
+      nama: "Jerami Kering",
+      jenis: "Hijauan Kering",
+      banyakStok: 150,
+      harga: 1500,
+      image: "jerami.jpg",
+    },
+  });
+  console.log(`Created pakan: ${pakanRumput.nama}, ${pakanKonsentrat.nama}, ${pakanJerami.nama}`);
 
-  // Jadwal makan untuk semua hari (Senin–Minggu), 1 sapi 1 hari
-  const jadwalSenin = await prisma.jadwalMakan.create({
+  // Sapi dummy
+  const sapi01 = await prisma.sapi.create({
     data: {
-      hari: "Senin",
-      sapiId: sapi1.id,
-      pagiJam: "07:00",
-      soreJam: "16:00",
-      pagiPakanId: pakan1.id,
-      sorePakanId: pakan2.id,
+      jenis: "Sapi Limousin A1",
+      bobot: 450,
+      image: "sapi_limousin_a1.jpg",
+      kandangId: kandangA.id,
+      tanggalLahir: new Date("2022-03-10T00:00:00.000Z"),
     },
   });
-  const jadwalSelasa = await prisma.jadwalMakan.create({
+  const sapi02 = await prisma.sapi.create({
     data: {
-      hari: "Selasa",
-      sapiId: sapi2.id,
-      pagiJam: "07:30",
-      soreJam: "16:30",
-      pagiPakanId: pakan2.id,
-      sorePakanId: pakan3.id,
+      jenis: "Sapi Brahman A2",
+      bobot: 400,
+      image: "sapi_brahman_a2.jpg",
+      kandangId: kandangA.id,
+      tanggalLahir: new Date("2022-07-20T00:00:00.000Z"),
     },
   });
-  const jadwalRabu = await prisma.jadwalMakan.create({
+  const sapi03 = await prisma.sapi.create({
     data: {
-      hari: "Rabu",
-      sapiId: sapi3.id,
-      pagiJam: "08:00",
-      soreJam: "17:00",
-      pagiPakanId: pakan3.id,
-      sorePakanId: pakan1.id,
+      jenis: "Sapi Simental B1",
+      bobot: 500,
+      image: "sapi_simental_b1.jpg",
+      kandangId: kandangB.id,
+      tanggalLahir: new Date("2021-11-05T00:00:00.000Z"),
     },
   });
-  const jadwalKamis = await prisma.jadwalMakan.create({
-    data: {
-      hari: "Kamis",
-      sapiId: sapi4.id,
-      pagiJam: "06:45",
-      soreJam: "15:45",
-      pagiPakanId: pakan1.id,
-      sorePakanId: pakan2.id,
-    },
-  });
-  const jadwalJumat = await prisma.jadwalMakan.create({
-    data: {
-      hari: "Jumat",
-      sapiId: sapi1.id,
-      pagiJam: "07:15",
-      soreJam: "16:15",
-      pagiPakanId: pakan2.id,
-      sorePakanId: pakan3.id,
-    },
-  });
-  const jadwalSabtu = await prisma.jadwalMakan.create({
-    data: {
-      hari: "Sabtu",
-      sapiId: sapi2.id,
-      pagiJam: "07:45",
-      soreJam: "16:45",
-      pagiPakanId: pakan3.id,
-      sorePakanId: pakan1.id,
-    },
-  });
-  const jadwalMinggu = await prisma.jadwalMakan.create({
-    data: {
-      hari: "Minggu",
-      sapiId: sapi3.id,
-      pagiJam: "08:15",
-      soreJam: "17:15",
-      pagiPakanId: pakan1.id,
-      sorePakanId: pakan2.id,
-    },
-  });
+  console.log(`Created sapi: ${sapi01.jenis} (ID: ${sapi01.id}), ${sapi02.jenis} (ID: ${sapi02.id}), ${sapi03.jenis} (ID: ${sapi03.id})`);
 
-  // Record dummy: hanya untuk Senin dan Selasa, hari lain kosong
-  await prisma.record.createMany({
+  // JadwalHarian dummy (PER SAPI)
+  // Jadwal untuk Sapi01
+  await prisma.jadwalHarian.createMany({
     data: [
-      // Senin (2024-06-10)
-      {
-        jadwalId: jadwalSenin.id,
-        userId: user1.id,
-        waktu: new Date("2024-06-10T07:05:00"),
-        pakanId: pakan1.id,
-      },
-      {
-        jadwalId: jadwalSenin.id,
-        userId: user2.id,
-        waktu: new Date("2024-06-10T16:10:00"),
-        pakanId: pakan2.id,
-      },
-      // Selasa (2024-06-11)
-      {
-        jadwalId: jadwalSelasa.id,
-        userId: user1.id,
-        waktu: new Date("2024-06-11T07:35:00"),
-        pakanId: pakan2.id,
-      },
-      {
-        jadwalId: jadwalSelasa.id,
-        userId: user2.id,
-        waktu: new Date("2024-06-11T16:40:00"),
-        pakanId: pakan3.id,
-      },
+      { sapiId: sapi01.id, hari: Hari.SENIN, pagiPakanId: pakanRumput.id, pagiWaktu: "07:00", sorePakanId: pakanKonsentrat.id, soreWaktu: "16:00" },
+      { sapiId: sapi01.id, hari: Hari.SELASA, pagiPakanId: pakanRumput.id, pagiWaktu: "07:05", sorePakanId: pakanKonsentrat.id, soreWaktu: "16:05" },
+      { sapiId: sapi01.id, hari: Hari.RABU, pagiPakanId: pakanJerami.id, pagiWaktu: "07:10", sorePakanId: pakanKonsentrat.id, soreWaktu: "16:10" },
+      // Tambahkan hari lain untuk sapi01 jika perlu
     ],
   });
+  // Jadwal untuk Sapi02
+  await prisma.jadwalHarian.createMany({
+    data: [
+      { sapiId: sapi02.id, hari: Hari.SENIN, pagiPakanId: pakanJerami.id, pagiWaktu: "07:30", sorePakanId: pakanRumput.id, soreWaktu: "16:30" },
+      { sapiId: sapi02.id, hari: Hari.SELASA, pagiPakanId: pakanJerami.id, pagiWaktu: "07:35", sorePakanId: pakanRumput.id, soreWaktu: "16:35" },
+      // Tambahkan hari lain untuk sapi02 jika perlu
+    ],
+  });
+  // Jadwal untuk Sapi03
+  await prisma.jadwalHarian.createMany({
+    data: [
+      { sapiId: sapi03.id, hari: Hari.SENIN, pagiPakanId: pakanKonsentrat.id, pagiWaktu: "08:00", sorePakanId: pakanRumput.id, soreWaktu: "17:00" },
+      { sapiId: sapi03.id, hari: Hari.SELASA, pagiPakanId: pakanKonsentrat.id, pagiWaktu: "08:05", sorePakanId: pakanJerami.id, soreWaktu: "17:05" },
+      // Tambahkan hari lain untuk sapi03 jika perlu
+    ],
+  });
+  console.log("Created JadwalHarian dummy data for each Sapi.");
 
-  console.log("Database direset, auto increment direset, dummy data masuk!");
+  // RecordPemberianMakan dummy
+  // Misal hari ini adalah 20 Mei 2025 (Selasa)
+  const tanggalHariIni = new Date("2025-05-20T00:00:00.000Z"); // Selasa
+  const tanggalKemarin = new Date("2025-05-19T00:00:00.000Z"); // Senin
+
+  await prisma.recordPemberianMakan.createMany({
+    data: [
+      // Sapi01 (Kandang A), Kemarin (Senin)
+      { sapiId: sapi01.id, pakanDiberikanId: pakanRumput.id, tanggalPemberian: tanggalKemarin, sesi: SesiPemberianMakan.PAGI, waktuPemberianActual: new Date("2025-05-19T07:05:00.000Z"), kandangId: sapi01.kandangId },
+      { sapiId: sapi01.id, pakanDiberikanId: pakanKonsentrat.id, tanggalPemberian: tanggalKemarin, sesi: SesiPemberianMakan.SORE, waktuPemberianActual: new Date("2025-05-19T16:10:00.000Z"), kandangId: sapi01.kandangId },
+      
+      // Sapi02 (Kandang A), Kemarin (Senin) - hanya pagi
+      { sapiId: sapi02.id, pakanDiberikanId: pakanJerami.id, tanggalPemberian: tanggalKemarin, sesi: SesiPemberianMakan.PAGI, waktuPemberianActual: new Date("2025-05-19T07:38:00.000Z"), kandangId: sapi02.kandangId },
+
+      // Sapi01 (Kandang A), Hari Ini (Selasa) - hanya pagi
+      { sapiId: sapi01.id, pakanDiberikanId: pakanRumput.id, tanggalPemberian: tanggalHariIni, sesi: SesiPemberianMakan.PAGI, waktuPemberianActual: new Date("2025-05-20T07:12:00.000Z"), kandangId: sapi01.kandangId },
+
+      // Sapi03 (Kandang B), Kemarin (Senin)
+      { sapiId: sapi03.id, pakanDiberikanId: pakanKonsentrat.id, tanggalPemberian: tanggalKemarin, sesi: SesiPemberianMakan.PAGI, waktuPemberianActual: new Date("2025-05-19T08:05:00.000Z"), kandangId: sapi03.kandangId },
+      { sapiId: sapi03.id, pakanDiberikanId: pakanRumput.id, tanggalPemberian: tanggalKemarin, sesi: SesiPemberianMakan.SORE, waktuPemberianActual: new Date("2025-05-19T17:10:00.000Z"), kandangId: sapi03.kandangId },
+    ],
+  });
+  console.log("Created RecordPemberianMakan dummy data.");
+
+  console.log("Seeding finished.");
 }
 
 main()
-  .then(() => process.exit(0))
   .catch((e) => {
     console.error(e);
     process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
   });

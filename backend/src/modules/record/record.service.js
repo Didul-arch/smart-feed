@@ -1,37 +1,34 @@
 const recordRepository = require('./record.repository');
+const prisma = require('../../db');
+const AppError = require('../../core/helper/appError');
 
 class RecordService {
-  async create(data) {
-    // Cek apakah waktu sesuai dengan sesi
-    const waktu = new Date(data.waktu);
-    const jam = waktu.getHours();
+  async createRecord(data) {
+    const { sapiId, tanggalPemberian, sesi } = data;
 
-    if (data.sesi === 'pagi' && jam >= 12) {
-      throw new Error('Sesi pagi hanya boleh sebelum jam 12:00');
+    const sapi = await prisma.sapi.findUnique({ where: { id: sapiId } });
+    if (!sapi) throw new AppError("Sapi tidak ditemukan", 404);
+
+    const targetDate = new Date(tanggalPemberian);
+    targetDate.setUTCHours(0, 0, 0, 0); // Normalisasi ke awal hari UTC
+
+    const existingRecord = await recordRepository.findBySapiDateSesi(sapiId, targetDate, sesi);
+    if (existingRecord) {
+      throw new AppError(`Sapi ini sudah diberi makan pada ${sesi} tanggal ${tanggalPemberian}`, 409);
     }
-
-    if (data.sesi === 'sore' && jam < 12) {
-      throw new Error('Sesi sore hanya boleh setelah jam 12:00');
-    }
-
-    // Cek duplikasi record
-    const tanggal = waktu.toISOString().split('T')[0];
-    const existing = await recordRepository.findByJadwalDateSesi(
-      data.jadwalId,
-      tanggal,
-      data.sesi
-    );
-
-    if (existing) {
-      throw new Error(`Record untuk jadwal ini pada tanggal ${tanggal} dan sesi ${data.sesi} sudah ada`);
-    }
-
-    return recordRepository.create(data);
+    
+    const recordData = {
+      ...data,
+      tanggalPemberian: targetDate, // Gunakan tanggal yang sudah dinormalisasi
+      kandangId: sapi.kandangId, // Ambil kandangId dari sapi
+      waktuPemberianActual: new Date(), // Waktu server saat ini
+    };
+    return recordRepository.create(recordData);
   }
 
-  async getAll(filters) {
-    return recordRepository.findAll(filters);
+  async getRecords(filters) {
+    // filters: { kandangId?: number, dateString?: string (YYYY-MM-DD), sesi?: SesiPemberianMakan }
+    return recordRepository.findByFilters(filters);
   }
 }
-
 module.exports = new RecordService();

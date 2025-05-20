@@ -5,26 +5,22 @@ const AppError = require('../../core/helper/appError');
 
 class RecordController {
   create = catchAsync(async (req, res) => {
-    const result = createRecordSchema.safeParse(req.body);
-    if (!result.success) {
-      throw new AppError(result.error.errors[0]?.message || 'Invalid input', 400);
-    }
-    
-    const record = await recordService.create(result.data);
+    const parse = createRecordSchema.safeParse(req.body);
+    if (!parse.success) throw new AppError(parse.error.errors[0]?.message || "Input tidak valid", 400);
+
+    const record = await recordService.createRecord(parse.data);
     res.status(201).json(record);
   });
 
   getAll = catchAsync(async (req, res) => {
-    const filters = {
-      jadwalId: req.query.jadwalId,
-      sapiId: req.query.sapiId,
-      date: req.query.date,
-      sesi: req.query.sesi
-    };
-    
-    const records = await recordService.getAll(filters);
+    const { kandangId, date, sesi } = req.query;
+    const filters = {};
+    if (kandangId) filters.kandangId = parseInt(kandangId);
+    if (date) filters.dateString = date;
+    if (sesi) filters.sesi = sesi; // Pastikan sesi valid (PAGI/SORE)
+
+    const records = await recordService.getRecords(filters);
     res.json(records);
   });
 }
-
 module.exports = new RecordController();
