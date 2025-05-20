@@ -3,7 +3,8 @@ const prisma = new PrismaClient();
 const bcrypt = require("bcryptjs");
 
 async function main() {
-  // Hapus semua data (urutan: anak ke induk)
+  // Hapus semua data
+  await prisma.record.deleteMany();
   await prisma.jadwalMakan.deleteMany();
   await prisma.sapi.deleteMany();
   await prisma.pakan.deleteMany();
@@ -12,16 +13,11 @@ async function main() {
 
   // Reset auto increment (PostgreSQL)
   await prisma.$executeRawUnsafe('ALTER SEQUENCE "User_id_seq" RESTART WITH 1');
-  await prisma.$executeRawUnsafe(
-    'ALTER SEQUENCE "Kandang_id_seq" RESTART WITH 1'
-  );
+  await prisma.$executeRawUnsafe('ALTER SEQUENCE "Kandang_id_seq" RESTART WITH 1');
   await prisma.$executeRawUnsafe('ALTER SEQUENCE "Sapi_id_seq" RESTART WITH 1');
-  await prisma.$executeRawUnsafe(
-    'ALTER SEQUENCE "Pakan_id_seq" RESTART WITH 1'
-  );
-  await prisma.$executeRawUnsafe(
-    'ALTER SEQUENCE "JadwalMakan_id_seq" RESTART WITH 1'
-  );
+  await prisma.$executeRawUnsafe('ALTER SEQUENCE "Pakan_id_seq" RESTART WITH 1');
+  await prisma.$executeRawUnsafe('ALTER SEQUENCE "JadwalMakan_id_seq" RESTART WITH 1');
+  await prisma.$executeRawUnsafe('ALTER SEQUENCE "Record_id_seq" RESTART WITH 1');
 
   // User dummy
   const passwordHash = await bcrypt.hash("password123", 10);
@@ -97,7 +93,8 @@ async function main() {
   // Pakan dummy
   const pakan1 = await prisma.pakan.create({
     data: {
-      jenis: "Rumput Gajah",
+      nama: "Rumput Gajah",
+      jenis: "Hijauan",
       banyakStok: 100,
       harga: 5000,
       image: "pakan1.jpg",
@@ -105,7 +102,8 @@ async function main() {
   });
   const pakan2 = await prisma.pakan.create({
     data: {
-      jenis: "Jerami",
+      nama: "Jerami",
+      jenis: "Hijauan",
       banyakStok: 50,
       harga: 3000,
       image: "pakan2.jpg",
@@ -113,6 +111,7 @@ async function main() {
   });
   const pakan3 = await prisma.pakan.create({
     data: {
+      nama: "Konsentrat",
       jenis: "Konsentrat",
       banyakStok: 30,
       harga: 8000,
@@ -120,48 +119,115 @@ async function main() {
     },
   });
 
-  // Jadwal makan dummy
-  await prisma.jadwalMakan.createMany({
+  // Jadwal makan untuk semua hari (Senin–Minggu), 1 sapi 1 hari
+  const jadwalSenin = await prisma.jadwalMakan.create({
+    data: {
+      hari: "Senin",
+      sapiId: sapi1.id,
+      pagiJam: "07:00",
+      soreJam: "16:00",
+      pagiPakanId: pakan1.id,
+      sorePakanId: pakan2.id,
+    },
+  });
+  const jadwalSelasa = await prisma.jadwalMakan.create({
+    data: {
+      hari: "Selasa",
+      sapiId: sapi2.id,
+      pagiJam: "07:30",
+      soreJam: "16:30",
+      pagiPakanId: pakan2.id,
+      sorePakanId: pakan3.id,
+    },
+  });
+  const jadwalRabu = await prisma.jadwalMakan.create({
+    data: {
+      hari: "Rabu",
+      sapiId: sapi3.id,
+      pagiJam: "08:00",
+      soreJam: "17:00",
+      pagiPakanId: pakan3.id,
+      sorePakanId: pakan1.id,
+    },
+  });
+  const jadwalKamis = await prisma.jadwalMakan.create({
+    data: {
+      hari: "Kamis",
+      sapiId: sapi4.id,
+      pagiJam: "06:45",
+      soreJam: "15:45",
+      pagiPakanId: pakan1.id,
+      sorePakanId: pakan2.id,
+    },
+  });
+  const jadwalJumat = await prisma.jadwalMakan.create({
+    data: {
+      hari: "Jumat",
+      sapiId: sapi1.id,
+      pagiJam: "07:15",
+      soreJam: "16:15",
+      pagiPakanId: pakan2.id,
+      sorePakanId: pakan3.id,
+    },
+  });
+  const jadwalSabtu = await prisma.jadwalMakan.create({
+    data: {
+      hari: "Sabtu",
+      sapiId: sapi2.id,
+      pagiJam: "07:45",
+      soreJam: "16:45",
+      pagiPakanId: pakan3.id,
+      sorePakanId: pakan1.id,
+    },
+  });
+  const jadwalMinggu = await prisma.jadwalMakan.create({
+    data: {
+      hari: "Minggu",
+      sapiId: sapi3.id,
+      pagiJam: "08:15",
+      soreJam: "17:15",
+      pagiPakanId: pakan1.id,
+      sorePakanId: pakan2.id,
+    },
+  });
+
+  // Record dummy: hanya untuk Senin dan Selasa, hari lain kosong
+  await prisma.record.createMany({
     data: [
+      // Senin (2024-06-10)
       {
-        tanggal: new Date(),
-        waktu: "07:00",
-        sapiId: sapi1.id,
-        pakanId: pakan1.id,
+        jadwalId: jadwalSenin.id,
         userId: user1.id,
+        waktu: new Date("2024-06-10T07:05:00"),
+        pakanId: pakan1.id,
       },
       {
-        tanggal: new Date(),
-        waktu: "12:00",
-        sapiId: sapi2.id,
+        jadwalId: jadwalSenin.id,
+        userId: user2.id,
+        waktu: new Date("2024-06-10T16:10:00"),
         pakanId: pakan2.id,
+      },
+      // Selasa (2024-06-11)
+      {
+        jadwalId: jadwalSelasa.id,
         userId: user1.id,
+        waktu: new Date("2024-06-11T07:35:00"),
+        pakanId: pakan2.id,
       },
       {
-        tanggal: new Date(),
-        waktu: "17:00",
-        sapiId: sapi3.id,
-        pakanId: pakan1.id,
+        jadwalId: jadwalSelasa.id,
         userId: user2.id,
-      },
-      {
-        tanggal: new Date(),
-        waktu: "07:00",
-        sapiId: sapi4.id,
+        waktu: new Date("2024-06-11T16:40:00"),
         pakanId: pakan3.id,
-        userId: user2.id,
       },
     ],
   });
+
+  console.log("Database direset, auto increment direset, dummy data masuk!");
 }
 
 main()
-  .then(() => {
-    console.log(
-      "Database direset, auto increment direset, dummy data banyak masuk!"
-    );
-    process.exit(0);
-  })
+  .then(() => process.exit(0))
   .catch((e) => {
     console.error(e);
     process.exit(1);

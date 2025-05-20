@@ -1,72 +1,65 @@
-const jadwalRepository = require("./jadwal.repository");
+const jadwalRepository = require('./jadwal.repository');
 
-class jadwalService {
-  async getStatusBySapiId(sapiId, tanggal = new Date()) {
-    const start = new Date(tanggal);
-    start.setHours(0, 0, 0, 0);
-    const end = new Date(tanggal);
-    end.setHours(23, 59, 59, 999);
-
-    const sapi = await jadwalRepository.findSapiById(sapiId);
-    if (!sapi) return null;
-
-    const pagi = await jadwalRepository.getJadwalMakan(sapiId, start, end, "pagi");
-    const sore = await jadwalRepository.getJadwalMakan(sapiId, start, end, "sore");
-
-    return {
-      sapiInfo: { id: sapi.id, jenis: sapi.jenis },
-      kandangInfo: sapi.kandang ? { id: sapi.kandang.id, nama: sapi.kandang.nama } : null,
-      makanPagi: pagi
-        ? {
-            user: pagi.user?.nama || null,
-            pakan: pagi.pakan?.jenis || null,
-            tanggal: pagi.tanggal,
-          }
-        : null,
-      makanSore: sore
-        ? {
-            user: sore.user?.nama || null,
-            pakan: sore.pakan?.jenis || null,
-            tanggal: sore.tanggal,
-          }
-        : null,
-    };
+class JadwalService {
+  async getAll(filters) {
+    return jadwalRepository.findAll(filters);
   }
 
-  async getStatusAllSapi({ kandangId, tanggal = new Date() }) {
-    const start = new Date(tanggal);
-    start.setHours(0, 0, 0, 0);
-    const end = new Date(tanggal);
-    end.setHours(23, 59, 59, 999);
+  async getById(id) {
+    const jadwal = await jadwalRepository.findById(id);
+    if (!jadwal) {
+      throw new Error('Jadwal tidak ditemukan');
+    }
+    return jadwal;
+  }
 
-    const sapiList = await jadwalRepository.findAllSapi(kandangId);
+  async create(data) {
+    // Cek apakah jadwal untuk sapi dan hari ini sudah ada
+    const existing = await jadwalRepository.findAll({
+      sapiId: data.sapiId,
+      hari: data.hari
+    });
 
-    return Promise.all(
-      sapiList.map(async (sapi) => {
-        const pagi = await jadwalRepository.getJadwalMakan(sapi.id, start, end, "pagi");
-        const sore = await jadwalRepository.getJadwalMakan(sapi.id, start, end, "sore");
+    if (existing.length > 0) {
+      throw new Error(`Jadwal untuk sapi ID ${data.sapiId} pada hari ${data.hari} sudah ada`);
+    }
 
-        return {
-          sapiInfo: { id: sapi.id, jenis: sapi.jenis },
-          kandangInfo: sapi.kandang ? { id: sapi.kandang.id, nama: sapi.kandang.nama } : null,
-          makanPagi: pagi
-            ? {
-                user: pagi.user?.nama || null,
-                pakan: pagi.pakan?.jenis || null,
-                tanggal: pagi.tanggal,
-              }
-            : null,
-          makanSore: sore
-            ? {
-                user: sore.user?.nama || null,
-                pakan: sore.pakan?.jenis || null,
-                tanggal: sore.tanggal,
-              }
-            : null,
-        };
-      })
-    );
+    return jadwalRepository.create(data);
+  }
+
+  async update(id, data) {
+    // Cek apakah jadwal ada
+    const jadwal = await this.getById(id);
+
+    // Kalau ganti sapi atau hari, cek konflik
+    if (data.sapiId || data.hari) {
+      const sapiId = data.sapiId || jadwal.sapiId;
+      const hari = data.hari || jadwal.hari;
+
+      const existing = await jadwalRepository.findAll({ sapiId, hari });
+
+      // Kalau ada jadwal lain dengan kombinasi yang sama
+      if (existing.length > 0 && existing[0].id !== Number(id)) {
+        throw new Error(`Jadwal untuk sapi ID ${sapiId} pada hari ${hari} sudah ada`);
+      }
+    }
+
+    return jadwalRepository.update(id, data);
+  }
+
+  async delete(id) {
+    // Cek apakah jadwal ada
+    await this.getById(id);
+    return jadwalRepository.delete(id);
+  }
+
+  async getDashboardData(date) {
+    if (!date) {
+      date = new Date().toISOString().split('T')[0]; // Default hari ini
+    }
+
+    return jadwalRepository.getDashboardData(date);
   }
 }
 
-module.exports = new jadwalService();
+module.exports = new JadwalService();

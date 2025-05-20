@@ -2,13 +2,13 @@ const prisma = require('../../db');
 
 class PakanRepository {
   async findAll() {
-    return prisma.pakan.findMany({ include: { jadwal: true } });
+    // Cukup ambil data pakan saja, tanpa include relasi jadwal apapun
+    return prisma.pakan.findMany();
   }
 
   async findById(id) {
     return prisma.pakan.findUnique({
-      where: { id: Number(id) },
-      include: { jadwal: true },
+      where: { id: Number(id) }, // pastikan id number
     });
   }
 

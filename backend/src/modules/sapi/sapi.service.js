@@ -22,4 +22,4 @@ class SapiService {
   }
 }
 
-module.exports = new SapiService();
+module.exports = new SapiService(); 

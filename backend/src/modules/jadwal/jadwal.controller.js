@@ -1,68 +1,65 @@
-const jadwalService = require("./jadwal.service");
-const { createJadwalSchema, updateJadwalSchema } = require("./jadwal.schema");
-const catchAsync = require("../../core/helper/catchAsync");
+const jadwalService = require('./jadwal.service');
+const { createJadwalSchema, updateJadwalSchema } = require('./jadwal.schema');
+const catchAsync = require('../../core/helper/catchAsync');
+const AppError = require('../../core/helper/appError');
 
 class JadwalController {
   getAll = catchAsync(async (req, res) => {
-    const data = await jadwalService.getAll();
+    const filters = {
+      hari: req.query.hari,
+      sapiId: req.query.sapiId,
+      kandangId: req.query.kandangId
+    };
+
+    const data = await jadwalService.getAll(filters);
     res.json(data);
   });
 
   getById = catchAsync(async (req, res) => {
     const { id } = req.params;
     const data = await jadwalService.getById(id);
-    if (!data) return res.status(404).json({ message: "Jadwal not found" });
     res.json(data);
   });
 
   create = catchAsync(async (req, res) => {
-    const parse = createJadwalSchema.safeParse(req.body);
-    if (!parse.success)
-      return res.status(400).json({ error: parse.error.errors });
-    const data = await jadwalService.create(parse.data);
+    const result = createJadwalSchema.safeParse(req.body);
+    if (!result.success) {
+      throw new AppError(result.error.errors[0]?.message || 'Invalid input', 400);
+    }
+
+    const data = await jadwalService.create(result.data);
     res.status(201).json(data);
   });
 
   update = catchAsync(async (req, res) => {
     const { id } = req.params;
-    const parse = updateJadwalSchema.safeParse(req.body);
-    if (!parse.success)
-      return res.status(400).json({ error: parse.error.errors });
-    const data = await jadwalService.update(id, parse.data);
-    if (!data) return res.status(404).json({ message: "Jadwal not found" });
+
+    const result = updateJadwalSchema.safeParse(req.body);
+    if (!result.success) {
+      throw new AppError(result.error.errors[0]?.message || 'Invalid input', 400);
+    }
+
+    const data = await jadwalService.update(id, result.data);
     res.json(data);
   });
 
   delete = catchAsync(async (req, res) => {
     const { id } = req.params;
-    const result = await jadwalService.delete(id);
-    if (!result) return res.status(404).json({ message: "Jadwal not found" });
+    await jadwalService.delete(id);
     res.status(204).send();
   });
 
-  // GET /api/v1/jadwal/status/:sapiId?tanggal=2024-05-10
-  getStatusBySapiId = catchAsync(async (req, res) => {
-    const { sapiId } = req.params;
-    const { tanggal } = req.query;
-    const status = await jadwalService.getStatusBySapiId(
-      Number(sapiId),
-      tanggal
-    );
-    if (!status) return res.status(404).json({ message: "Sapi not found" });
-    res.json(status);
+  getDashboard = catchAsync(async (req, res) => {
+    const { date } = req.query;
+    const data = await jadwalService.getDashboardData(date);
+    res.json(data);
   });
 
-  // GET /api/v1/jadwal/status?kandangId=1&tanggal=2024-05-10
-  getStatusAllSapi = catchAsync(async (req, res) => {
-    const { kandangId, tanggal } = req.query;
-    const statusList = await jadwalService.getStatusAllSapi({
-      kandangId: kandangId ? Number(kandangId) : undefined,
-      tanggal,
-    });
-    res.json(statusList);
+  getSummaryByKandang = catchAsync(async (req, res) => {
+    const { date } = req.query;
+    const data = await jadwalService.getSummaryByKandang(date);
+    res.json(data);
   });
 }
 
 module.exports = new JadwalController();
-
-

@@ -16,7 +16,7 @@ function createRoute(app) {
 function v1() {
   const router = express.Router();
 
-  // Auth
+  // Auth 
   router.post('/login', handler.authHandler.login);
   router.post('/refresh', handler.authHandler.refresh);
 
@@ -29,7 +29,7 @@ function v1() {
   router.delete('/sapi/:id', handler.sapiHandler.delete);
   router.patch('/sapi/:id', handler.sapiHandler.update);
 
-  // Sapi routes
+  // Kandang routes
   router.post('/kandang', handler.kandangHandler.create);
   router.get('/kandang', handler.kandangHandler.getAll);
   router.get('/kandang/:id', handler.kandangHandler.getById);
@@ -49,20 +49,24 @@ function v1() {
   router.get('/kandang/:id', handler.kandangHandler.getById);
   router.delete('/kandang/:id', handler.kandangHandler.delete);
   router.patch('/kandang/:id', handler.kandangHandler.update);
-  
-  // JadwalRoutes
+
+  // Jadwal routes
   router.post('/jadwal', handler.jadwalHandler.create);
   router.get('/jadwal', handler.jadwalHandler.getAll);
-
-  // Status routes harus sebelum /jadwal/:id
-  router.get('/jadwal/status', handler.jadwalHandler.getStatusAllSapi);
-  router.get('/jadwal/status/:sapiId', handler.jadwalHandler.getStatusBySapiId);
-
   router.get('/jadwal/:id', handler.jadwalHandler.getById);
-  router.delete('/jadwal/:id', handler.jadwalHandler.delete);
   router.patch('/jadwal/:id', handler.jadwalHandler.update);
+  router.delete('/jadwal/:id', handler.jadwalHandler.delete);
 
-// ...existing code...
+  // Dashboard untuk tampilan utama
+  router.get('/dashboard', handler.jadwalHandler.getDashboard);
+
+  // Summary routes
+  router.get('/jadwal-summary', handler.jadwalHandler.getSummaryByKandang);
+
+  // Record routes
+  router.post('/record', handler.recordHandler.create);
+  router.get('/record', handler.recordHandler.getAll); // histori/filter
+
 
   return router;
 }

@@ -22,7 +22,7 @@ class SapiRepository {
       data,
     });
   }
-
+ 
   async delete(id) {
     return prisma.sapi.delete({
       where: { id: Number(id) },

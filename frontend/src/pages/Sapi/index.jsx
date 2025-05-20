@@ -1,102 +1,84 @@
-import { Link } from "react-router-dom";
-import { useFetchData } from "@/hooks/useAPI";
+import { useFetchData } from '../../hooks/useAPI';
+import { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '../../components/ui/card';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Badge } from '../../components/ui/badge';
+import { Link, useParams, useNavigate } from 'react-router-dom';
+import { ArrowLeft, Plus, Pencil } from 'lucide-react';
 
-// Import shadcn components
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+const SapiList = () => {
+  const { kandangId } = useParams();
+  const { data: kandang, loading, error } = useFetchData(`/kandang/${kandangId}`);
+  const [search, setSearch] = useState('');
+  const navigate = useNavigate();
 
-// Import icons
-import { Beef, Users, CookingPot, Eye } from "lucide-react";
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
 
-const Sapi = () => {
-  const { data: kandangList, loading, error } = useFetchData("/kandang");
-
-  if (loading) return <div className="p-4">Loading...</div>;
-  if (error) return <div className="p-4 text-red-500">Error: {error}</div>;
+  // filter sapi berdasarkan search
+  const filteredSapi = kandang?.sapi?.filter(sapi =>
+    sapi.jenis.toLowerCase().includes(search.toLowerCase())
+  ) || [];
 
   return (
-    <div className="w-full">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Daftar Kandang</h1>
-        <Button size="sm" variant="outline">
-          + Tambah Kandang
+    <div className="container mx-auto p-6">
+      <div className="flex justify-between items-center mb-6">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" type="button" onClick={() => navigate(-1)}>
+            <ArrowLeft className="w-4 h-4 mr-2" /> Kembali
+          </Button>
+          <h2 className="text-2xl font-bold">Daftar Sapi di {kandang?.nama}</h2>
+        </div>
+        <div className='flex gap-4 items-center'>
+        <Button asChild size="sm" variant="secondary" className="ml-2">
+          <Link to={`/kandang/${kandangId}/edit`}>
+            <Pencil className="w-4 h-4 mr-1" /> Edit Kandang
+          </Link>
         </Button>
+        <Button asChild>
+          <Link to="/sapi/add"><Plus className="w-4 h-4 mr-1" />Tambah Sapi</Link>
+        </Button>
+        </div>
       </div>
-      
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {kandangList?.map((kandang) => (
-          <Card key={kandang.id} className="overflow-hidden border-2 hover:border-primary transition-colors">
-            <CardHeader className="pb-2">
-              <div className="flex items-start justify-between">
-                <CardTitle className="text-lg font-bold">{kandang.nama}</CardTitle>
-                <Badge variant="outline" className="bg-primary/10 text-primary">
-                  Aktif
-                </Badge>
-              </div>
-              <CardDescription className="text-sm text-muted-foreground">
-                Kandang ID: #{kandang.id}
-              </CardDescription>
+      <Input
+        placeholder="Cari sapi berdasarkan jenis..."
+        value={search}
+        onChange={e => setSearch(e.target.value)}
+        className="mb-4"
+      />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredSapi.map(sapi => (
+          <Card key={sapi.id}>
+            <CardHeader>
+              <CardTitle>{sapi.jenis}</CardTitle>
             </CardHeader>
-            
-            <CardContent className="pb-3">
-              <div className="grid grid-cols-2 gap-3 mt-2">
-                <div className="flex items-center gap-2">
-                  <div className="p-1.5 rounded-md bg-primary/10 text-primary">
-                    <Beef size={16} />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Total Sapi</p>
-                    <p className="text-sm font-semibold">{kandang._count.sapi || 0} ekor</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-2">
-                  <div className="p-1.5 rounded-md bg-green-500/10 text-green-500">
-                    <CookingPot size={16} />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Diberi Pakan</p>
-                    <p className="text-sm font-semibold">{kandang.jumlahDiberiPakan || 0} ekor</p>
-                  </div>
-                </div>
+            <CardContent>
+              <div className="mb-2">
+                <Badge>{sapi.bobot} kg</Badge>
+              </div>
+              <div className="text-sm text-muted-foreground">
+                ID: {sapi.id}
               </div>
             </CardContent>
-            
-            <CardFooter className="pt-0">
-              <Button 
-                variant="ghost" 
-                className="w-full justify-start gap-2 hover:text-primary"
-                asChild
-              >
-                <Link to={`/sapi/${kandang.id}`}>
-                  <Eye size={16} />
-                  <span>Lihat Detail Kandang</span>
-                </Link>
+            <CardFooter className="flex gap-2">
+              <Button asChild size="sm" variant="outline">
+                <Link to={`/sapi/detail/${sapi.id}`}>Detail</Link>
+              </Button>
+              <Button asChild size="sm" variant="secondary">
+                <Link to={`/sapi/${sapi.id}/edit`}>Edit</Link>
               </Button>
             </CardFooter>
           </Card>
         ))}
-        
-        {!kandangList?.length && (
-          <div className="col-span-full flex flex-col items-center justify-center p-12 text-center bg-muted/40 rounded-lg">
-            <Beef size={48} className="text-muted-foreground/50" />
-            <h3 className="mt-4 text-xl font-semibold">Belum Ada Kandang</h3>
-            <p className="text-muted-foreground mt-2">
-              Tambahkan kandang baru untuk mulai mengelola ternak sapi Anda
-            </p>
-          </div>
-        )}
       </div>
+      {filteredSapi.length === 0 && (
+        <div className="text-center py-8 text-muted-foreground">
+          Tidak ada sapi ditemukan
+        </div>
+      )}
     </div>
   );
 };
 
-export default Sapi;
+export default SapiList;

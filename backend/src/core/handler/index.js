@@ -4,5 +4,6 @@ const kandangHandler = require('../../modules/kandang/kandang.controller');
 const pakanHandler = require('../../modules/pakan/pakan.controller');
 const jadwalHandler = require('../../modules/jadwal/jadwal.controller');
 const authHandler = require('../../core/auth/auth.controller');
+const recordHandler = require('../../modules/record/record.controller')
 
-module.exports = { errorHandler, sapiHandler, kandangHandler, pakanHandler, authHandler, jadwalHandler };
+module.exports = { errorHandler, sapiHandler, kandangHandler, pakanHandler, authHandler, jadwalHandler, recordHandler };
