@@ -17,17 +17,34 @@ class SapiController {
   });
 
   create = catchAsync(async (req, res) => {
+    if (req.body.tanggalKematian === "") req.body.tanggalKematian = null;
     const parse = createSapiSchema.safeParse(req.body);
     if (!parse.success) throw new AppError(parse.error.errors[0]?.message || "Invalid input", 400);
-    const data = await sapiService.create(parse.data); 
+
+    // Transform tanggal ke Date (ISO)
+    const dataToCreate = {
+      ...parse.data,
+      tanggalLahir: parse.data.tanggalLahir ? new Date(parse.data.tanggalLahir) : undefined,
+      tanggalKematian: parse.data.tanggalKematian ? new Date(parse.data.tanggalKematian) : null,
+    };
+
+    const data = await sapiService.create(dataToCreate);
     res.status(201).json(data);
   });
 
   update = catchAsync(async (req, res) => {
-    const { id } = req.params;
+    if (req.body.tanggalKematian === "") req.body.tanggalKematian = null;
     const parse = updateSapiSchema.safeParse(req.body);
     if (!parse.success) throw new AppError(parse.error.errors[0]?.message || "Invalid input", 400);
-    const data = await sapiService.update(id, parse.data);
+
+    // Transform tanggal ke Date (ISO)
+    const dataToUpdate = {
+      ...parse.data,
+      tanggalLahir: parse.data.tanggalLahir ? new Date(parse.data.tanggalLahir) : undefined,
+      tanggalKematian: parse.data.tanggalKematian ? new Date(parse.data.tanggalKematian) : null,
+    };
+
+    const data = await sapiService.update(req.params.id, dataToUpdate);
     if (!data) throw new AppError("Sapi not found", 404);
     res.json(data);
   });
