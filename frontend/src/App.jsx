@@ -22,7 +22,10 @@ import AddPakan from "./pages/Pakan/Add";
 import EditPakan from "./pages/Pakan/Edit";
 
 // Jadwal (jika nanti diaktifkan)
-// import Jadwal from "./pages/Jadwal";
+import JadwalPage from "./pages/Jadwal";
+import JadwalKandangDetailPage from "./pages/Jadwal/JadwalKandangDetail";
+
+import RiwayatPemberianPakan from "./pages/Riwayat";
 
 function ProtectedLayout() {
   return (
@@ -63,9 +66,12 @@ function App() {
           <Route path="/pakan/add" element={<AddPakan />} />
           <Route path="/pakan/:id/edit" element={<EditPakan />} />
 
-          {/* Jadwal (aktifkan jika sudah ada) */}
-          {/* <Route path="/jadwal" element={<Jadwal />} /> */}
-
+          {/* Jadwal */}
+          <Route path="/jadwal" element={<JadwalPage />} />
+          <Route path="/jadwal/kandang/:kandangId" element={<JadwalKandangDetailPage />} />
+          
+          {/* Riwayat Pemberian Pakan */}
+          <Route path="/riwayat" element={<RiwayatPemberianPakan />} />
         </Route>
 
         {/* Redirect jika route tidak ditemukan */}

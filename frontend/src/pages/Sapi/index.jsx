@@ -9,7 +9,7 @@ import { ArrowLeft, Plus, Pencil } from 'lucide-react';
 
 const SapiList = () => {
   const { kandangId } = useParams();
-  const { data: kandang, loading, error } = useFetchData(`/kandang/${kandangId}`);
+  const { data: kandang, loading, error } = useFetchData(kandangId ? `/kandang/${kandangId}` : null);
   const [search, setSearch] = useState('');
   const navigate = useNavigate();
 
@@ -28,17 +28,19 @@ const SapiList = () => {
           <Button variant="ghost" type="button" onClick={() => navigate(-1)}>
             <ArrowLeft className="w-4 h-4 mr-2" /> Kembali
           </Button>
-          <h2 className="text-2xl font-bold">Daftar Sapi di {kandang?.nama}</h2>
+          <h2 className="text-2xl font-bold">Daftar Sapi di {kandang?.nama || `Kandang ID ${kandangId}`}</h2>
         </div>
-        <div className='flex gap-4 items-center'>
-        <Button asChild size="sm" variant="secondary" className="ml-2">
-          <Link to={`/kandang/${kandangId}/edit`}>
-            <Pencil className="w-4 h-4 mr-1" /> Edit Kandang
-          </Link>
-        </Button>
-        <Button asChild>
-          <Link to="/sapi/add"><Plus className="w-4 h-4 mr-1" />Tambah Sapi</Link>
-        </Button>
+        <div className="flex gap-4 items-center">
+          <Button asChild size="sm" variant="secondary" className="ml-2">
+            <Link to={`/kandang/${kandangId}/edit`}>
+              <Pencil className="w-4 h-4 mr-1" /> Edit Kandang
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link to={`/sapi/add?kandangId=${kandangId}`}>
+              <Plus className="w-4 h-4 mr-1" />Tambah Sapi
+            </Link>
+          </Button>
         </div>
       </div>
       <Input
@@ -47,11 +49,11 @@ const SapiList = () => {
         onChange={e => setSearch(e.target.value)}
         className="mb-4"
       />
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {filteredSapi.map(sapi => (
-          <Card key={sapi.id}>
+          <Card key={sapi.id} className="flex flex-col h-full">
             <CardHeader>
-              <CardTitle>{sapi.jenis}</CardTitle>
+              <CardTitle className="text-base sm:text-lg">{sapi.jenis}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="mb-2">
@@ -61,11 +63,11 @@ const SapiList = () => {
                 ID: {sapi.id}
               </div>
             </CardContent>
-            <CardFooter className="flex gap-2">
-              <Button asChild size="sm" variant="outline">
+            <CardFooter className="flex gap-2 mt-auto">
+              <Button asChild size="sm" variant="outline" className="flex-1">
                 <Link to={`/sapi/detail/${sapi.id}`}>Detail</Link>
               </Button>
-              <Button asChild size="sm" variant="secondary">
+              <Button asChild size="sm" variant="secondary" className="flex-1">
                 <Link to={`/sapi/${sapi.id}/edit`}>Edit</Link>
               </Button>
             </CardFooter>
