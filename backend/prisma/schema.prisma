@@ -58,6 +58,17 @@ model Pakan {
   jadwalHarianPagi JadwalHarian[]           @relation("JadwalPagiPakanRel")
   jadwalHarianSore JadwalHarian[]           @relation("JadwalSorePakanRel")
   recordsPakanDiberikan RecordPemberianMakan[] @relation("PakanDiberikanRel")
+
+  // Field Nutrisi
+  bk                 Float? // Bahan Kering (%)
+  pk                 Float? // Protein Kasar (%)
+  sk                 Float? // Serat Kasar (%)
+  tdn                Float? // Total Digestible Nutrient (%)
+  ca                 Float? // Kalsium (%)
+  p                  Float? // Fosfor (%)
+
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 }
 
 
@@ -101,17 +112,19 @@ model RecordPemberianMakan {
   id                 String             @id @default(cuid())
   sapi               Sapi               @relation(fields: [sapiId], references: [id], onDelete: Cascade)
   sapiId             Int
-  pakanDiberikan     Pakan              @relation("PakanDiberikanRel", fields: [pakanDiberikanId], references: [id], onDelete: Restrict) // Pakan yg diberikan tidak boleh null
-  pakanDiberikanId   Int
+  kandangId          Int // Denormalisasi untuk query lebih mudah, diisi dari sapi.kandangId
 
-  tanggalPemberian     DateTime // Tanggal pemberian makan (waktu bisa diabaikan atau set ke awal hari)
-  sesi                 SesiPemberianMakan // Enum: PAGI, SORE
-  waktuPemberianActual DateTime           @default(now()) // Waktu aktual tombol "Beri Makan" ditekan
+  pakanDiberikan     Pakan              @relation("PakanDiberikanRel", fields: [pakanDiberikanId], references: [id], onDelete: Restrict)
+  pakanDiberikanId   Int
+  jumlahDiberikan    Float // JUMLAH PAKAN YANG DIBERIKAN (misal dalam KG)
+
+  tanggalPemberian     DateTime
+  sesi                 SesiPemberianMakan
+  waktuPemberianActual DateTime           @default(now())
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([sapiId, tanggalPemberian, sesi]) // Sapi hanya bisa makan sekali per sesi per tanggal
-  @@index([kandangId, tanggalPemberian]) // Untuk query cepat berdasarkan kandang dan tanggal
-  kandangId Int // Denormalisasi untuk query lebih mudah, diisi dari sapi.kandangId
+  @@unique([sapiId, tanggalPemberian, sesi])
+  @@index([kandangId, tanggalPemberian])
 }

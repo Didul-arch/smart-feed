@@ -3,7 +3,7 @@ import { useParams, useSearchParams, Link, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"; // Untuk Pagi/Sore
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"; // Untuk Pagi/Sore
 import { ArrowLeft, Utensils, CheckCircle, XCircle } from "lucide-react";
 import { useFetchData, useSubmitData } from "@/hooks/useAPI"; // Asumsi useSubmitData untuk POST
 import BeriMakanModal from "./BeriMakanModal"; // Komponen modal yang akan dibuat
@@ -28,13 +28,13 @@ const JadwalKandangDetailPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedSapiForModal, setSelectedSapiForModal] = useState(null);
 
-  const { 
-    data: displayData, 
-    loading: loadingDisplay, 
-    error: errorDisplay, 
-    refresh: refreshDisplayData 
+  const {
+    data: displayData,
+    loading: loadingDisplay,
+    error: errorDisplay,
+    refresh: refreshDisplayData
   } = useFetchData(kandangId && selectedDate ? `/jadwal/kandang/${kandangId}/display?date=${selectedDate}` : null);
-  
+
   const { data: pakanList, loading: loadingPakan, error: errorPakan } = useFetchData("/pakan");
   const { submitData, loading: submittingRecord, error: errorSubmittingRecord } = useSubmitData();
 
@@ -47,25 +47,36 @@ const JadwalKandangDetailPage = () => {
     setIsModalOpen(true);
   };
 
-  const handleConfirmBeriMakan = async (sapiId, pakanDiberikanId) => {
+  // Modifikasi handleConfirmBeriMakan untuk menerima jumlahDiberikan
+  const handleConfirmBeriMakan = async (sapiId, pakanDiberikanId, jumlahDiberikan) => {
     if (!pakanDiberikanId) {
-      alert("Pilih pakan terlebih dahulu!"); // Atau gunakan toast notifikasi
+      alert("Pilih pakan terlebih dahulu!");
       return;
     }
+    if (!jumlahDiberikan || jumlahDiberikan <= 0) {
+      alert("Jumlah pakan harus lebih dari 0!");
+      return;
+    }
+
     try {
       await submitData("/records", "POST", {
         sapiId: sapiId,
         pakanDiberikanId: Number(pakanDiberikanId),
+        jumlahDiberikan: jumlahDiberikan, // Kirim jumlahDiberikan ke backend
         tanggalPemberian: selectedDate, // YYYY-MM-DD
         sesi: selectedSesi,
       });
       setIsModalOpen(false);
       setSelectedSapiForModal(null);
       refreshDisplayData(); // Refresh data setelah berhasil
-      // Tambahkan notifikasi sukses jika perlu
+      // Tambahkan notifikasi sukses jika perlu (misalnya dengan toast)
+      alert("Pemberian pakan berhasil dicatat dan stok telah diperbarui!");
     } catch (err) {
       console.error("Gagal mencatat pemberian makan:", err);
       // Tampilkan error ke user, errorSubmittingRecord akan terisi oleh hook
+      // Anda bisa menampilkan pesan error dari err.response.data.message jika ada
+      const apiErrorMessage = err.response?.data?.message || "Terjadi kesalahan saat menyimpan data.";
+      alert(`Gagal mencatat pemberian makan: ${apiErrorMessage}`);
     }
   };
 
@@ -129,8 +140,8 @@ const JadwalKandangDetailPage = () => {
                   <p className="text-sm text-muted-foreground">Pakan: {pakanDiberikan}</p>
                 )}
                 {!sudahMakan && (
-                  <Button 
-                    className="w-full mt-2" 
+                  <Button
+                    className="w-full mt-2"
                     onClick={() => handleBeriMakan(sapi)}
                     disabled={submittingRecord}
                   >

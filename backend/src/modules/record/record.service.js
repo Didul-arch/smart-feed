@@ -1,34 +1,69 @@
-const recordRepository = require('./record.repository');
-const prisma = require('../../db');
-const AppError = require('../../core/helper/appError');
+const recordRepository = require("./record.repository");
+const sapiRepository = require("../sapi/sapi.repository");
+const AppError = require("../../core/helper/appError");
+const prisma = require("../../db");
 
 class RecordService {
   async createRecord(data) {
-    const { sapiId, tanggalPemberian, sesi } = data;
+    const { sapiId, pakanDiberikanId, jumlahDiberikan, tanggalPemberian, sesi } = data;
 
-    const sapi = await prisma.sapi.findUnique({ where: { id: sapiId } });
-    if (!sapi) throw new AppError("Sapi tidak ditemukan", 404);
-
-    const targetDate = new Date(tanggalPemberian);
-    targetDate.setUTCHours(0, 0, 0, 0); // Normalisasi ke awal hari UTC
-
-    const existingRecord = await recordRepository.findBySapiDateSesi(sapiId, targetDate, sesi);
-    if (existingRecord) {
-      throw new AppError(`Sapi ini sudah diberi makan pada ${sesi} tanggal ${tanggalPemberian}`, 409);
+    const sapi = await sapiRepository.findById(sapiId);
+    if (!sapi) {
+      throw new AppError("Sapi tidak ditemukan", 404);
     }
-    
-    const recordData = {
-      ...data,
-      tanggalPemberian: targetDate, // Gunakan tanggal yang sudah dinormalisasi
-      kandangId: sapi.kandangId, // Ambil kandangId dari sapi
-      waktuPemberianActual: new Date(), // Waktu server saat ini
-    };
-    return recordRepository.create(recordData);
+
+    // Gunakan transaksi untuk memastikan konsistensi data
+    return prisma.$transaction(async (tx) => {
+      const pakan = await tx.pakan.findUnique({
+        where: { id: pakanDiberikanId },
+      });
+
+      if (!pakan) {
+        throw new AppError("Pakan tidak ditemukan", 404);
+      }
+
+      if (pakan.banyakStok < jumlahDiberikan) {
+        throw new AppError(`Stok pakan "${pakan.nama}" tidak mencukupi. Tersisa: ${pakan.banyakStok}`, 400);
+      }
+
+      // Kurangi stok pakan
+      await tx.pakan.update({
+        where: { id: pakanDiberikanId },
+        data: {
+          banyakStok: {
+            decrement: jumlahDiberikan,
+          },
+        },
+      });
+
+      // Buat record pemberian makan
+      const recordData = {
+        sapiId,
+        kandangId: sapi.kandangId, // Ambil kandangId dari sapi
+        pakanDiberikanId,
+        jumlahDiberikan, // Simpan jumlah yang diberikan
+        tanggalPemberian,
+        sesi,
+        // waktuPemberianActual akan default dari Prisma
+      };
+      const newRecord = await tx.recordPemberianMakan.create({ // Gunakan tx
+        data: recordData,
+      });
+      return newRecord;
+    });
   }
 
-  async getRecords(filters) {
-    // filters: { kandangId?: number, dateString?: string (YYYY-MM-DD), sesi?: SesiPemberianMakan }
+  async getAllRecords(filters) {
     return recordRepository.findByFilters(filters);
   }
+
+  async getRecordById(id) {
+    const record = await recordRepository.findById(id);
+    if (!record) {
+      throw new AppError("Record tidak ditemukan", 404);
+    }
+    return record;
+  }
 }
+
 module.exports = new RecordService();

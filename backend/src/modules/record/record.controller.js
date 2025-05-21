@@ -19,7 +19,7 @@ class RecordController {
     if (date) filters.dateString = date;
     if (sesi) filters.sesi = sesi; // Pastikan sesi valid (PAGI/SORE)
 
-    const records = await recordService.getRecords(filters);
+    const records = await recordService.getAllRecords(filters);
     res.json(records);
   });
 }

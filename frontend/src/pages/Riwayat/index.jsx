@@ -203,6 +203,7 @@ const RiwayatPemberianPakanPage = () => {
               <TableHead>Sapi</TableHead>
               <TableHead>Kandang</TableHead>
               <TableHead>Pakan Diberikan</TableHead>
+              <TableHead>Jumlah Diberikan</TableHead>
               <TableHead>Sesi</TableHead>
             </TableRow>
           </TableHeader>
@@ -214,6 +215,7 @@ const RiwayatPemberianPakanPage = () => {
                 <TableCell>{record.sapi?.jenis || `ID: ${record.sapiId}`}</TableCell>
                 <TableCell>{kandangList?.find(k => k.id === record.kandangId)?.nama || `ID: ${record.kandangId}`}</TableCell>
                 <TableCell>{record.pakanDiberikan?.nama || `ID: ${record.pakanDiberikanId}`}</TableCell>
+                <TableCell>{record.jumlahDiberikan + " Kg" || "tidak ada riwayat"}</TableCell>
                 <TableCell>{record.sesi}</TableCell>
               </TableRow>
             ))}
