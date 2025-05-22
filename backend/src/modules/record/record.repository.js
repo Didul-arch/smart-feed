@@ -1,90 +1,58 @@
-const prisma = require('../../db');
+const prisma = require('../../db'); // Pastikan path ke instance Prisma Client benar
 
 class RecordRepository {
   async create(data) {
-    return prisma.record.create({
+    return prisma.recordPemberianMakan.create({
       data,
-      include: {
-        jadwal: true,
-        user: true,
-        pakan: true
-      }
+      include: { pakanDiberikan: true, sapi: { select: { id: true, jenis: true } } },
     });
   }
 
-  async findByJadwalDateSesi(jadwalId, date, sesi) {
-    const startDate = new Date(date);
-    startDate.setHours(0, 0, 0, 0);
+  async findBySapiDateSesi(sapiId, date, sesi) {
+    // 'date' harus objek Date yang dinormalisasi ke awal hari (UTC direkomendasikan)
+    const startDate = new Date(date); // Asumsi date sudah UTC 00:00:00
+    const endDate = new Date(startDate);
+    endDate.setUTCDate(startDate.getUTCDate() + 1); // Awal hari berikutnya UTC
 
-    const endDate = new Date(date);
-    endDate.setHours(23, 59, 59, 999);
-
-    return prisma.record.findFirst({
+    return prisma.recordPemberianMakan.findFirst({
       where: {
-        jadwalId: Number(jadwalId),
-        sesi,
-        waktu: {
+        sapiId,
+        tanggalPemberian: {
           gte: startDate,
-          lte: endDate
-        }
-      }
+          lt: endDate, // Menggunakan lt untuk mencakup hingga akhir hari startDate
+        },
+        sesi,
+      },
+      include: { pakanDiberikan: true },
     });
   }
 
-  async findAll(filters = {}) {
-    const { jadwalId, sapiId, date, sesi } = filters;
-    const where = {};
+  async findByFilters({ kandangId, dateString, sesi, sapiId }) {
+    const whereClause = {};
+    if (kandangId) whereClause.kandangId = kandangId;
+    if (sesi) whereClause.sesi = sesi;
+    if (sapiId) whereClause.sapiId = sapiId;
 
-    if (jadwalId) where.jadwalId = Number(jadwalId);
-    if (sesi) where.sesi = sesi;
+    if (dateString) {
+      const targetDate = new Date(dateString);
+      const startDate = new Date(Date.UTC(targetDate.getUTCFullYear(), targetDate.getUTCMonth(), targetDate.getUTCDate()));
+      const endDate = new Date(startDate);
+      endDate.setUTCDate(startDate.getUTCDate() + 1);
 
-    if (date) {
-      const startDate = new Date(date);
-      startDate.setHours(0, 0, 0, 0);
-
-      const endDate = new Date(date);
-      endDate.setHours(23, 59, 59, 999);
-
-      where.waktu = {
+      whereClause.tanggalPemberian = {
         gte: startDate,
-        lte: endDate
+        lt: endDate,
       };
     }
 
-    // Untuk filter by sapiId
-    if (sapiId) {
-      return prisma.record.findMany({
-        where: {
-          ...where,
-          jadwal: {
-            sapiId: Number(sapiId)
-          }
-        },
-        include: {
-          jadwal: {
-            include: {
-              sapi: true
-            }
-          },
-          user: true,
-          pakan: true
-        }
-      });
-    }
-
-    return prisma.record.findMany({
-      where,
+    return prisma.recordPemberianMakan.findMany({
+      where: whereClause,
       include: {
-        jadwal: {
-          include: {
-            sapi: true
-          }
-        },
-        user: true,
-        pakan: true
-      }
+        sapi: { select: { id: true, jenis: true /*, nama: true */ } },
+        pakanDiberikan: { select: { id: true, nama: true } },
+      },
+      orderBy: { waktuPemberianActual: 'desc' },
     });
   }
 }
-
 module.exports = new RecordRepository();

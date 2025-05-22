@@ -15,284 +15,116 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-model User{
-  id       Int  @id @default(autoincrement()) 
-  email    String @unique
-  password String 
+model User {
+  id       Int     @id @default(autoincrement())
+  email    String  @unique
+  password String
   nama     String
   // relation
-  records  Record[]
 }
 
 model Kandang {
-  id          Int     @id @default(autoincrement())
-  nama        String
-  lokasi      String?
-  kapasitas   Int
+  id           Int            @id @default(autoincrement())
+  nama         String
+  lokasi       String?
+  kapasitas    Int
   // relation
-  sapi        Sapi[]
+  sapi         Sapi[]
 }
 
 model Sapi {
-  id             Int       @id @default(autoincrement())
-  jenis          String
-  bobot          Float
-  image          String
-  kandang        Kandang   @relation(fields: [kandangId], references: [id])
-  kandangId      Int
-  tanggalLahir   DateTime
-  tanggalKematian DateTime?
+  id                   Int                      @id @default(autoincrement())
+  jenis                String
+  bobot                Float
+  image                String
+  kandang              Kandang                  @relation(fields: [kandangId], references: [id])
+  kandangId            Int
+  tanggalLahir         DateTime
+  tanggalKematian      DateTime?
   // relation
-  jadwal         JadwalMakan[]
+  recordPemberianMakan RecordPemberianMakan[]
+  jadwalHarian JadwalHarian[]
+
 }
 
-model Pakan{
-  id       Int  @id @default(autoincrement())
-  nama     String
-  jenis    String
-  banyakStok Float
-  harga    Float? 
-  image    String
-  // relation 
-  pagiJadwal  JadwalMakan[] @relation("PagiPakan")
-  soreJadwal  JadwalMakan[] @relation("SorePakan")
-  records     Record[]
+model Pakan {
+  id               Int                      @id @default(autoincrement())
+  nama             String
+  jenis            String
+  banyakStok       Float
+  harga            Float?
+  image            String
+  // relation
+  jadwalHarianPagi JadwalHarian[]           @relation("JadwalPagiPakanRel")
+  jadwalHarianSore JadwalHarian[]           @relation("JadwalSorePakanRel")
+  recordsPakanDiberikan RecordPemberianMakan[] @relation("PakanDiberikanRel")
+
+  // Field Nutrisi
+  bk                 Float? // Bahan Kering (%)
+  pk                 Float? // Protein Kasar (%)
+  sk                 Float? // Serat Kasar (%)
+  tdn                Float? // Total Digestible Nutrient (%)
+  ca                 Float? // Kalsium (%)
+  p                  Float? // Fosfor (%)
+
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 }
 
-enum Sesi {
-  pagi
-  sore
+
+enum Hari {
+  SENIN
+  SELASA
+  RABU
+  KAMIS
+  JUMAT
+  SABTU
+  MINGGU
 }
 
-model JadwalMakan {
-  id           Int      @id @default(autoincrement())
-  hari         String   // Senin, Selasa, dst.
-  sapi         Sapi     @relation(fields: [sapiId], references: [id])
-  sapiId       Int
-  pagiJam      String   // "07:00"
-  soreJam      String   // "16:00" 
-  pagiPakanId  Int
-  sorePakanId  Int
-  pagiPakan    Pakan    @relation("PagiPakan", fields: [pagiPakanId], references: [id])
-  sorePakan    Pakan    @relation("SorePakan", fields: [sorePakanId], references: [id])
-  records      Record[]
-
-  @@unique([sapiId, hari]) // Sapi cuma boleh punya 1 jadwal per hari
+enum SesiPemberianMakan {
+  PAGI
+  SORE
 }
 
-model Record {
-  id        Int        @id @default(autoincrement())
-  jadwal    JadwalMakan @relation(fields: [jadwalId], references: [id])
-  jadwalId  Int
-  user      User       @relation(fields: [userId], references: [id])
-  userId    Int
-  waktu     DateTime
-  pakan     Pakan      @relation(fields: [pakanId], references: [id])
-  pakanId   Int
-  sesi      Sesi       // pagi atau sore
+
+model JadwalHarian {
+  id          String  @id @default(cuid())
+  sapi     Sapi @relation(fields: [sapiId], references: [id], onDelete: Cascade)
+  sapiId   Int
+  hari        Hari // Enum: SENIN, SELASA, ..., MINGGU
+
+  pagiPakan   Pakan?  @relation("JadwalPagiPakanRel", fields: [pagiPakanId], references: [id], onDelete: SetNull)
+  pagiPakanId Int?
+  pagiWaktu   String? // Contoh: "07:00"
+
+  sorePakan   Pakan?  @relation("JadwalSorePakanRel", fields: [sorePakanId], references: [id], onDelete: SetNull)
+  sorePakanId Int?
+  soreWaktu   String? // Contoh: "16:00"
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([sapiId, hari]) // Satu kandang hanya punya satu jadwal per hari dalam seminggu
 }
 
-// SEBELUM BACA DOKUMEN INI MOHON BACA DULU MODULE SAPI DAN MODULE KANDANG! (CONTROLLER, SERVICE, REPOSITORY) UNTUK MELIHAT SEPERTI APA JSON YANG DIBERIKAN OLEH SAPI DAN KANDANG.
+model RecordPemberianMakan {
+  id                 String             @id @default(cuid())
+  sapi               Sapi               @relation(fields: [sapiId], references: [id], onDelete: Cascade)
+  sapiId             Int
+  kandangId          Int // Denormalisasi untuk query lebih mudah, diisi dari sapi.kandangId
 
-// each jadwal have to have:
-// 1. jadwalId
-// 2. Hari (jadwal diset untuk mingguan dan dapat dirubah)
-// 3. Sapi (sapi yang mana, kandang yang mana).
-// 4. Pakan (diberi pakan apa)
-// 5. Jam (dibagi menjadi 2, pagi dan sore) 
-// 6. Records (telah diberi makan pada hari yang telah ditentukan oleh siapa (user) )
+  pakanDiberikan     Pakan              @relation("PakanDiberikanRel", fields: [pakanDiberikanId], references: [id], onDelete: Restrict)
+  pakanDiberikanId   Int
+  jumlahDiberikan    Float // JUMLAH PAKAN YANG DIBERIKAN (misal dalam KG)
 
-// jadwal bisa ditambahkan tapi untuk tiap hari jadi misal hanya bisa menambah jadwal senin, selasa, rabu, ..., minggu.
-// jika udah ada jadwal senin, kita gabisa buat jadwal senin lagi.
-// jika kita mau update jadwal ya berarti berdasarkan harinya ajaa gitu
-// jika ingin hapus jadwal ya hapus aja berarti jadwalnya, tapi recordnya ya tetep ada gitu.
+  tanggalPemberian     DateTime
+  sesi                 SesiPemberianMakan
+  waktuPemberianActual DateTime           @default(now())
 
-// jadi secara kesimpulan si jadwal ini mengontrol sapi A pada kandang A TIAP MINGGUNYA memakan pakan A pada jam pagi misal 08.00 dan jam sore misal 16.00,
-// jadi misal kayak si jadwal nih kek
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-// "jadwal": {
-//            "pagi": [
-//             {
-//                 "id": 1,
-//                 "sudahDikasihMakan": true,
-//                 "hari": "Senin",
-//                 "pagiJam": "07:00",
-//                 "sapi": {
-//                     "id": 1,
-//                     "jenis": "Sapi Bali",
-//                     "bobot": 350,
-//                     "image": "sapi1.jpg",
-//                     "kandangId": 1,
-//                     "tanggalLahir": "2022-01-01T00:00:00.000Z",
-//                     "tanggalKematian": null
-//                 },
-//                 "pagiPakan": {
-//                     "id": 1,
-//                     "nama": "Rumput Gajah",
-//                     "jenis": "Hijauan",
-//                     "banyakStok": 100,
-//                     "image": "pakan1.jpg"
-//                 },
-//             }, 
-//             {
-//                 "id": 2,
-//                 "sudahDikasihMakan": true,
-//                 "hari": "Selasa",
-//                 "pagiJam": "07:30",
-//                 "sapi": {
-//                     "id": 2,
-//                     "jenis": "Sapi Limousin",
-//                     "bobot": 420,
-//                     "image": "sapi2.jpg",
-//                     "kandangId": 1,
-//                     "tanggalLahir": "2021-06-15T00:00:00.000Z",
-//                     "tanggalKematian": null
-//                 },
-//                 "pagiPakan": {
-//                     "id": 2,
-//                     "nama": "Jerami",
-//                     "jenis": "Hijauan",
-//                     "banyakStok": 50,
-//                     "image": "pakan2.jpg"
-//                 }
-//             }
-//            ],
-//            "sore" : [
-//             {
-//                 "id": 1,
-//                 "sudahDikasihMakan": true,
-//                 "hari": "Senin",
-//                 "soreJam": "16:00",
-//                 "sapi": {
-//                     "id": 1,
-//                     "jenis": "Sapi Bali",
-//                     "bobot": 350,
-//                     "image": "sapi1.jpg",
-//                     "kandangId": 1,
-//                     "tanggalLahir": "2022-01-01T00:00:00.000Z",
-//                     "tanggalKematian": null
-//                 },
-//                 "sorePakan": {
-//                     "id": 1,
-//                     "nama": "Rumput Basah",
-//                     "jenis": "Rumput Afrika",
-//                     "banyakStok": 12,
-//                     "image": "pakan1.jpg"
-//                 },
-//             }, 
-//             {
-//                 "id": 2,
-//                 "sudahDikasihMakan": true,
-//                 "hari": "Selasa",
-//                 "soreJam": "17:30",
-//                 "sapi": {
-//                     "id": 2,
-//                     "jenis": "Sapi Limousin",
-//                     "bobot": 420,
-//                     "image": "sapi2.jpg",
-//                     "kandangId": 1,
-//                     "tanggalLahir": "2021-06-15T00:00:00.000Z",
-//                     "tanggalKematian": null
-//                 },
-//                 "sorePakan": {
-//                     "id": 2,
-//                     "nama": "Jerami",
-//                     "jenis": "Hijauan",
-//                     "banyakStok": 50,
-//                     "harga": 3000,
-//                     "image": "pakan2.jpg"
-//                 }
-//             }
-//            
-//            ]
-// }
-
-
-// UNTUK RECORDS ALIAS UNTUK SEJAARAH SAPINYA UDAH PERNAH DIKASIH MAKAN APA AJA DAN KAPAN AJA
-// "records": [
-//                     {
-//                         "id": 1,
-//                         "jadwalId": 1,
-//                         "userId": 1,
-//                         "waktu": "2024-06-10T00:05:00.000Z",
-//                         "pakanId": 1,
-//                         "user": {
-//                             "id": 1,
-//                             "email": "user@mail.com",
-//                             "password": "$2b$10$WhYoGcaE3LvR3xhKCjz.b.WCvAp483fsL.0U0WDlhM61Y1uanWPxO",
-//                             "nama": "Peternak Satu"
-//                         },
-//                         "pakan": {
-//                             "id": 1,
-//                             "nama": "Rumput Gajah",
-//                             "jenis": "Hijauan",
-//                             "banyakStok": 100,
-//                             "harga": 5000,
-//                             "image": "pakan1.jpg"
-//                         }
-//                     },
-//                     {
-//                         "id": 2,
-//                         "jadwalId": 1,
-//                         "userId": 2,
-//                         "waktu": "2024-06-10T09:10:00.000Z",
-//                         "pakanId": 2,
-//                         "user": {
-//                             "id": 2,
-//                             "email": "peternak2@mail.com",
-//                             "password": "$2b$10$WhYoGcaE3LvR3xhKCjz.b.WCvAp483fsL.0U0WDlhM61Y1uanWPxO",
-//                             "nama": "Peternak Dua"
-//                         },
-//                         "pakan": {
-//                             "id": 2,
-//                             "nama": "Jerami",
-//                             "jenis": "Hijauan",
-//                             "banyakStok": 50,
-//                             "harga": 3000,
-//                             "image": "pakan2.jpg"
-//                         }
-//                     },
-//                     {
-//                         "id": 3,
-//                         "jadwalId": 2,
-//                         "userId": 1,
-//                         "waktu": "2024-06-11T00:35:00.000Z",
-//                         "pakanId": 2,
-//                         "user": {
-//                             "id": 1,
-//                             "email": "user@mail.com",
-//                             "password": "$2b$10$WhYoGcaE3LvR3xhKCjz.b.WCvAp483fsL.0U0WDlhM61Y1uanWPxO",
-//                             "nama": "Peternak Satu"
-//                         },
-//                         "pakan": {
-//                             "id": 2,
-//                             "nama": "Jerami",
-//                             "jenis": "Hijauan",
-//                             "banyakStok": 50,
-//                             "harga": 3000,
-//                             "image": "pakan2.jpg"
-//                         }
-//                     },
-//                     {
-//                         "id": 4,
-//                         "jadwalId": 2,
-//                         "userId": 2,
-//                         "waktu": "2024-06-11T09:40:00.000Z",
-//                         "pakanId": 3,
-//                         "user": {
-//                             "id": 2,
-//                             "email": "peternak2@mail.com",
-//                             "password": "$2b$10$WhYoGcaE3LvR3xhKCjz.b.WCvAp483fsL.0U0WDlhM61Y1uanWPxO",
-//                             "nama": "Peternak Dua"
-//                         },
-//                         "pakan": {
-//                             "id": 3,
-//                             "nama": "Konsentrat",
-//                             "jenis": "Konsentrat",
-//                             "banyakStok": 30,
-//                             "harga": 8000,
-//                             "image": "pakan3.jpg"
-//                         }
-//                     }
-//                 
-//                 ]
+  @@unique([sapiId, tanggalPemberian, sesi])
+  @@index([kandangId, tanggalPemberian])
+}

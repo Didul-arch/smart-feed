@@ -1,8 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const handler = require('../core/handler');
-const authMiddleware = require('../core/auth/auth.middleware')
-
+const authMiddleware = require('../core/auth/auth.middleware');
 
 function createRoute(app) {
   app.use(express.json());
@@ -43,29 +42,17 @@ function v1() {
   router.delete('/pakan/:id', handler.pakanHandler.delete);
   router.patch('/pakan/:id', handler.pakanHandler.update);
 
-  // Kandang Routes
-  router.post('/kandang', handler.kandangHandler.create);
-  router.get('/kandang', handler.kandangHandler.getAll);
-  router.get('/kandang/:id', handler.kandangHandler.getById);
-  router.delete('/kandang/:id', handler.kandangHandler.delete);
-  router.patch('/kandang/:id', handler.kandangHandler.update);
-
   // Jadwal routes
-  router.post('/jadwal', handler.jadwalHandler.create);
-  router.get('/jadwal', handler.jadwalHandler.getAll);
-  router.get('/jadwal/:id', handler.jadwalHandler.getById);
-  router.patch('/jadwal/:id', handler.jadwalHandler.update);
-  router.delete('/jadwal/:id', handler.jadwalHandler.delete);
+  router.post('/jadwal', handler.jadwalHandler.setJadwal); // Membuat/mengupdate jadwal harian untuk 1 sapi
+  router.get('/jadwal/sapi/:sapiId', handler.jadwalHandler.getJadwalSapi); // Mendapatkan jadwal mingguan 1 sapi
+  router.get('/jadwal/kandang/:kandangId/display', handler.jadwalHandler.getJadwalDisplay); // Tampilan utama jadwal kandang per tanggal
+  router.patch('/jadwal/sapi/:sapiId/hari/:hari', handler.jadwalHandler.updateJadwalSapiHari); // Update jadwal 1 hari untuk 1 sapi
+  router.delete('/jadwal/sapi/:sapiId/hari/:hari', handler.jadwalHandler.deleteJadwalSapiHari); // Hapus jadwal 1 hari untuk 1 sapi
 
-  // Dashboard untuk tampilan utama
-  router.get('/dashboard', handler.jadwalHandler.getDashboard);
-
-  // Summary routes
-  router.get('/jadwal-summary', handler.jadwalHandler.getSummaryByKandang);
 
   // Record routes
-  router.post('/record', handler.recordHandler.create);
-  router.get('/record', handler.recordHandler.getAll); // histori/filter
+  router.post('/records', handler.recordHandler.create);
+  router.get('/records', handler.recordHandler.getAll);
 
 
   return router;

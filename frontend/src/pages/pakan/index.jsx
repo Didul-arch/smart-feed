@@ -54,16 +54,30 @@ const PakanList = () => {
           <Card key={pakan.id}>
             <CardHeader>
               <CardTitle>{pakan.nama}</CardTitle>
+              <Badge variant="outline">{pakan.jenis}</Badge>
             </CardHeader>
-            <CardContent>
-              <div className="mb-2">
-                <Badge>{pakan.jenis}</Badge>
+            <CardContent className="text-sm space-y-2">
+              <div>
+                Stok: <span className="font-semibold">{pakan.banyakStok} kg</span>
               </div>
-              <div className="text-sm text-muted-foreground">
-                Stok: <span className="font-semibold">{pakan.banyakStok}</span>
+              <div>
+                Harga: <span className="font-semibold">Rp{pakan.harga?.toLocaleString("id-ID") || 0}</span>
               </div>
-              <div className="text-sm text-muted-foreground">
-                Harga: Rp{pakan.harga?.toLocaleString("id-ID")}
+              {/* Tampilkan Info Nutrisi */}
+              <div className="pt-2 border-t mt-2">
+                <h4 className="font-medium mb-1 text-xs text-muted-foreground">Kandungan Nutrisi:</h4>
+                <ul className="list-disc list-inside text-xs space-y-0.5">
+                  {pakan.bk !== null && pakan.bk !== undefined && <li>BK: {pakan.bk}%</li>}
+                  {pakan.pk !== null && pakan.pk !== undefined && <li>PK: {pakan.pk}%</li>}
+                  {pakan.sk !== null && pakan.sk !== undefined && <li>SK: {pakan.sk}%</li>}
+                  {pakan.tdn !== null && pakan.tdn !== undefined && <li>TDN: {pakan.tdn}%</li>}
+                  {pakan.ca !== null && pakan.ca !== undefined && <li>Ca: {pakan.ca}%</li>}
+                  {pakan.p !== null && pakan.p !== undefined && <li>P: {pakan.p}%</li>}
+                </ul>
+                {(pakan.bk === null || pakan.bk === undefined) &&
+                  (pakan.pk === null || pakan.pk === undefined) && // Cek jika semua nutrisi kosong
+                  <p className="text-xs text-muted-foreground italic">Info nutrisi belum tersedia.</p>
+                }
               </div>
             </CardContent>
             <CardFooter className="flex gap-2">

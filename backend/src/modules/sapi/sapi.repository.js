@@ -2,13 +2,23 @@ const prisma = require('../../db');
 
 class SapiRepository {
   async findAll() {
-    return prisma.sapi.findMany({ include: { kandang: true, jadwal: true } });
+    return prisma.sapi.findMany({
+      include: {
+        kandang: true,
+        jadwalHarian: true, // Tetap include jadwalHarian
+        // recordPemberianMakan: true, // Dihapus/dikomentari
+      }
+    });
   }
 
   async findById(id) {
     return prisma.sapi.findUnique({
       where: { id: Number(id) },
-      include: { kandang: true, jadwal: true },
+      include: {
+        kandang: true,
+        jadwalHarian: true, // Tetap include jadwalHarian
+        // recordPemberianMakan: true, // Dihapus/dikomentari
+      },
     });
   }
 
@@ -22,7 +32,7 @@ class SapiRepository {
       data,
     });
   }
- 
+
   async delete(id) {
     return prisma.sapi.delete({
       where: { id: Number(id) },
