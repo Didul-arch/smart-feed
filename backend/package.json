@@ -7,7 +7,10 @@
     "dev": "nodemon --watch src src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "seed": "node prisma/seed.js",
-    "delete": "node prisma/delSeed.js"
+    "delete": "node prisma/delSeed.js",
+    "start": "node src/index.js",
+    "build": "prisma generate",
+    "postinstall": "prisma generate"
   },
   "keywords": [],
   "author": "",
