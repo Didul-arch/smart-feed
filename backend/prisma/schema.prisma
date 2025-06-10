@@ -41,6 +41,7 @@ model Sapi {
   kandangId            Int
   tanggalLahir         DateTime
   tanggalKematian      DateTime?
+  jenisKelamin         String // Tambahkan baris ini (atau gunakan Enum jika lebih sesuai)
   // relation
   recordPemberianMakan RecordPemberianMakan[]
   jadwalHarian JadwalHarian[]

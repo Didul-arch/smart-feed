@@ -15,16 +15,19 @@ export default function EditKandang() {
       ...form,
       kapasitas: Number(form.kapasitas),
     });
-    navigate(-1);
+    navigate("/sapi"); // Mengarahkan ke daftar kandang
   };
 
   if (loadingData) return <div className="p-4">Loading...</div>;
-  if (!data) return <div className="p-4 text-red-500">Kandang tidak ditemukan</div>;
+  if (!data)
+    return <div className="p-4 text-red-500">Kandang tidak ditemukan</div>;
 
   return (
     <div className="container mx-auto py-8 max-w-xl">
       <div className="flex items-center gap-2 mb-6">
-        <Button variant="ghost" type="button" onClick={() => navigate(-1)}>
+        <Button variant="ghost" type="button" onClick={() => navigate("/sapi")}>
+          {" "}
+          {/* Mengarahkan ke daftar kandang */}
           <ArrowLeft className="w-4 h-4 mr-2" /> Kembali
         </Button>
         <h1 className="text-2xl font-bold">Edit Kandang</h1>

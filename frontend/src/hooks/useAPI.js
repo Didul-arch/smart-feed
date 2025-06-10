@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import api from '../services/api';
+import { useState, useEffect } from "react";
+import api, { createRequest } from "../services/api";
 
 export const useFetchData = (url, options = {}) => {
   const [data, setData] = useState(null);
@@ -9,18 +9,18 @@ export const useFetchData = (url, options = {}) => {
 
   // Function to trigger a refetch
   const refresh = () => {
-    setRefetch(prev => prev + 1);
+    setRefetch((prev) => prev + 1);
   };
 
   useEffect(() => {
     let isMounted = true;
-    
+
     const fetchData = async () => {
       setLoading(true);
-      
+
       try {
         const response = await api.get(url, options);
-        
+
         if (isMounted) {
           setData(response.data.data || response.data);
           setError(null);
@@ -52,22 +52,25 @@ export const useSubmitData = () => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
 
-  const submitData = async (url, method, data) => {
+  const submitData = async (url, method, data, contentType = "json") => {
     setLoading(true);
     setError(null);
     setSuccess(false);
 
     try {
-      const response = await api({
+      // Choose appropriate API instance based on content type
+      const apiInstance = createRequest(data, contentType);
+
+      const response = await apiInstance({
         url,
         method,
-        data
+        data,
       });
-      
+
       setSuccess(true);
       return response.data;
     } catch (err) {
-      const message = err.response?.data?.message || 'An error occurred';
+      const message = err.response?.data?.message || "An error occurred";
       setError(message);
       throw new Error(message);
     } finally {
