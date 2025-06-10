@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate, Outlet } from "react-router-dom";
+import { Routes, Route, Navigate, Outlet, useLocation } from "react-router-dom";
 import { AuthProvider } from "./auth/AuthContext";
 import ProtectedRoute from "./auth/ProtectedRoute";
 import Layout from "./components/layout/Layout";
@@ -28,10 +28,11 @@ import JadwalKandangDetailPage from "./pages/Jadwal/JadwalKandangDetail";
 import RiwayatPemberianPakan from "./pages/Riwayat";
 
 function ProtectedLayout() {
+  const location = useLocation(); // Tambahkan ini
   return (
     <ProtectedRoute>
       <Layout>
-        <Outlet />
+        <Outlet key={location.pathname} /> {/* Tambahkan key di sini */}
       </Layout>
     </ProtectedRoute>
   );
@@ -46,7 +47,6 @@ function App() {
 
         {/* Semua route di bawah ini butuh autentikasi dan layout */}
         <Route element={<ProtectedLayout />}>
-
           {/* Home */}
           <Route path="/" element={<Home />} />
 
@@ -68,8 +68,11 @@ function App() {
 
           {/* Jadwal */}
           <Route path="/jadwal" element={<JadwalPage />} />
-          <Route path="/jadwal/kandang/:kandangId" element={<JadwalKandangDetailPage />} />
-          
+          <Route
+            path="/jadwal/kandang/:kandangId"
+            element={<JadwalKandangDetailPage />}
+          />
+
           {/* Riwayat Pemberian Pakan */}
           <Route path="/riwayat" element={<RiwayatPemberianPakan />} />
         </Route>

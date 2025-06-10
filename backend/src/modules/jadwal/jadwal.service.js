@@ -37,16 +37,15 @@ class JadwalService {
   }
 
   async getJadwalDisplayForKandang(kandangId, dateString) {
-    const targetDate = new Date(dateString); // Ini akan jadi local timezone server
-    // Untuk konsistensi, lebih baik operasikan dengan UTC jika memungkinkan atau pastikan timezone konsisten
+    const targetDate = new Date(dateString); 
     const targetDateUTCStart = new Date(Date.UTC(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate()));
 
-    const hariEnum = getHariEnumFromDateString(dateString); // Mendapatkan hari berdasarkan UTC
+    const hariEnum = getHariEnumFromDateString(dateString);
     if (!hariEnum) throw new AppError("Format tanggal tidak valid atau tanggal tidak bisa diproses", 400);
 
     const kandang = await prisma.kandang.findUnique({
       where: { id: kandangId },
-      include: { sapi: { select: { id: true, jenis: true /*, nama: true (jika ada) */ } } },
+      include: { sapi: { select: { id: true, jenis: true } } },
     });
     if (!kandang) throw new AppError("Kandang tidak ditemukan", 404);
 
@@ -65,7 +64,6 @@ class JadwalService {
       sapiListWithDetails.push({
         id: sapi.id,
         jenis: sapi.jenis,
-        // nama: sapi.nama, // Jika ada field nama di model Sapi
         statusPagi: recordPagi ? 'Sudah Makan' : 'Belum Makan',
         pakanPagiDiberikan: recordPagi ? recordPagi.pakanDiberikan.nama : null,
         statusSore: recordSore ? 'Sudah Makan' : 'Belum Makan',
@@ -81,11 +79,11 @@ class JadwalService {
 
     return {
       kandang: { id: kandang.id, nama: kandang.nama, lokasi: kandang.lokasi },
-      tanggal: dateString, // Kembalikan tanggal input
+      tanggal: dateString,
       hari: hariEnum,
       totalSapiDiKandang: kandang.sapi.length,
-      totalDiberiMakanPagi: totalDiberiMakanPagi, // Format angka sederhana
-      totalDiberiMakanSore: totalDiberiMakanSore, // Format angka sederhana
+      totalDiberiMakanPagi: totalDiberiMakanPagi, 
+      totalDiberiMakanSore: totalDiberiMakanSore, 
       sapiList: sapiListWithDetails,
     };
   }

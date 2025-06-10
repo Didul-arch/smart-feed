@@ -223,9 +223,6 @@ const HomePage = () => {
         </Card>
 
       </div>
-      <p className="text-xs text-muted-foreground text-center mt-8">
-        Catatan: Ringkasan pemberian pakan dihitung berdasarkan data semua kandang. Untuk performa optimal pada skala besar, disarankan menggunakan endpoint backend khusus untuk dashboard.
-      </p>
     </div>
   );
 };
