@@ -1,20 +1,18 @@
 const express = require("express");
-const handler = require("../core/handler");
+const {
+errorHandler, sapiHandler, kandangHandler, pakanHandler, authHandler, jadwalHandler, recordHandler
+} = require("../core/handler");
 const authMiddleware = require("../core/auth/auth.middleware");
 const upload = require("../middleware/upload"); // Pastikan baris ini tidak dikomentari
 const cors = require("cors");
 
-// Import test controller
-const testController = require("../modules/test/test.controller");
-
 function createRoute(app) {
-  // CORS HARUS PALING ATAS!
   app.use(
     cors({
       origin: [
-        "http://localhost:5173", // development
-        "https://smart-feed-frontend.vercel.app", // production frontend
-        "https://smart-feed-frontend-avbrgdc50-syafiq-syadidul-azmis-projects.vercel.app", // deployment URL
+        "http://localhost:5173", 
+        "https://smart-feed-frontend.vercel.app", 
+        "https://smart-feed-frontend-avbrgdc50-syafiq-syadidul-azmis-projects.vercel.app",
       ],
       credentials: true,
       methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
@@ -23,32 +21,16 @@ function createRoute(app) {
     })
   );
 
-  // Handle preflight requests
   app.options("*", cors());
-
-  // EXPRESS.JSON SETELAH CORS!
   app.use(express.json());
 
   app.use("/api/v1", v1());
-  app.use("*", handler.errorHandler.notFoundHandler);
-  app.use(handler.errorHandler.globalErrorHandler);
+  app.use("*", errorHandler.notFoundHandler);
+  app.use(errorHandler.globalErrorHandler);
 }
 
 function v1() {
   const router = express.Router();
-
-  // Test endpoints (temporarily disabled to debug)
-  // router.get("/test/database", testController.testDatabase);
-  // router.get("/test/storage", testController.testStorage);
-  // router.get("/test/all", testController.testAll);
-
-  const authHandler = require("../core/auth/auth.controller");
-  const kandangHandler = require("../modules/kandang/kandang.controller");
-  const sapiHandler = require("../modules/sapi/sapi.controller");
-  const pakanHandler = require("../modules/pakan/pakan.controller");
-  // const jadwalHandler = require("../modules/jadwal/jadwal.controller");
-  const recordHandler = require("../modules/record/record.controller");
-
   // Auth
   router.post("/login", authHandler.login);
 
@@ -89,6 +71,23 @@ function v1() {
   router.post("/records", authMiddleware, recordHandler.create);
   router.put("/records/:id", authMiddleware, recordHandler.update);
   router.delete("/records/:id", authMiddleware, recordHandler.delete);
+
+  // Jadwal
+  router.post("/jadwal", jadwalHandler.setJadwal); // Membuat/mengupdate jadwal harian untuk 1 sapi
+  router.get("/jadwal/sapi/:sapiId", jadwalHandler.getJadwalSapi); // Mendapatkan jadwal mingguan 1 sapi
+  router.get(
+    "/jadwal/kandang/:kandangId/display",
+    jadwalHandler.getJadwalDisplay
+  ); // Tampilan utama jadwal kandang per tanggal
+  router.patch(
+    "/jadwal/sapi/:sapiId/hari/:hari",
+    jadwalHandler.updateJadwalSapiHari
+  ); // Update jadwal 1 hari untuk 1 sapi
+  router.delete(
+    "/jadwal/sapi/:sapiId/hari/:hari",
+    jadwalHandler.deleteJadwalSapiHari
+  ); // Hapus jadwal 1 hari untuk 1 sapi
+
 
   return router;
 }
