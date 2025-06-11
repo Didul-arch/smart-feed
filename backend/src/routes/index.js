@@ -7,6 +7,7 @@ const upload = require("../middleware/upload"); // Pastikan baris ini tidak diko
 const cors = require("cors");
 
 function createRoute(app) {
+  // CORS HARUS PALING ATAS!
   app.use(
     cors({
       origin: [
@@ -15,13 +16,15 @@ function createRoute(app) {
         "https://smart-feed-frontend-avbrgdc50-syafiq-syadidul-azmis-projects.vercel.app",
       ],
       credentials: true,
-      methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+      methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"], // Pastikan OPTIONS ada di sini
       allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
-      optionsSuccessStatus: 200,
+      optionsSuccessStatus: 204, // Menggunakan 204 untuk preflight success
     })
   );
 
-  app.options("*", cors());
+  // app.options("*", cors()); // Baris ini dihapus karena app.use(cors(options)) di atas seharusnya sudah menangani preflight
+
+  // EXPRESS.JSON SETELAH CORS!
   app.use(express.json());
 
   app.use("/api/v1", v1());
